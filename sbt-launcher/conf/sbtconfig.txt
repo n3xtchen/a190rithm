@@ -12,3 +12,4 @@
 
 -Dsbt.log.format=true
 
+-deprecation

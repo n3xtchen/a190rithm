@@ -9,7 +9,6 @@ lazy val commonSettings = Seq(
 )
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
-javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-XX:MaxPermSize=2048M", "-XX:+CMSClassUnloadingEnabled")
 
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
