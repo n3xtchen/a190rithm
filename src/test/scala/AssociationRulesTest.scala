@@ -20,7 +20,7 @@ class AssociationRulesTest extends FunSpec with ShouldMatchers {
       List('B','D','E'),
       List('A','B','C','D')
     )
-    val miniSup = .7
+    val miniSup = .6
 
     it("Apriori") {
       AssociationRules.apriori(D, miniSup)
