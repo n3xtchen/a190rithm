@@ -55,4 +55,29 @@ object AssociationRules {
       }
       r
   }
+
+  def aprioriRecur[A](docs: Seq[Seq[A]], miniSup: Double)(implicit order: Ordering[A]) = {
+      val docCnt = docs.length
+      // k = 1
+      var cutKeys = docs
+        .flatMap(doc => compress(doc.sorted)) // 去除item 中重复的值
+        .groupBy(t => Seq(t))
+        .mapValues(_.length*1.0/docCnt) // 计算支持度
+        .filter(_._2 >= miniSup) // 剪枝
+        .toSeq
+
+      // k > 1
+      def recur(keys: Seq[(Seq[A], Double)]): Seq[(Seq[A], Double)] = keys match {
+        case Nil => Nil
+        case _: Seq[(Seq[A], Double)] => {
+          // 组成新值，并排序去重
+          val newKeys = compress(cartesianProduct(keys.map(_._1)).sortBy(_.toString).toList)
+            .map(
+              key => (key, countItemOfKeys(docs)(key)*1.0/docCnt) // 计算支持度
+            ).filter(_._2 >= miniSup) // 剪枝
+          newKeys ++ recur(newKeys)
+        }
+      }
+      cutKeys ++ recur(cutKeys)
+  }
 }

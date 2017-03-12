@@ -24,6 +24,7 @@ class AssociationRulesTest extends FunSpec with ShouldMatchers {
 
     it("Apriori") {
       AssociationRules.apriori(D, miniSup).foreach(println)
+      AssociationRules.aprioriRecur(D, miniSup).foreach(println)
     }
   }
 }
