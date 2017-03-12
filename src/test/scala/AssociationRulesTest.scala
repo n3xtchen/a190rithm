@@ -23,7 +23,7 @@ class AssociationRulesTest extends FunSpec with ShouldMatchers {
     val miniSup = .6
 
     it("Apriori") {
-      AssociationRules.apriori(D, miniSup)
+      AssociationRules.apriori(D, miniSup).foreach(println)
     }
   }
 }
