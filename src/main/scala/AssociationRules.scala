@@ -14,38 +14,45 @@ object AssociationRules {
    * 置信度 miniCon ：同时包含X,Y的文档数/含有X的文档数
    */
 
-  def compress[A](list: List[A]): List[A] = list match {
+  // 去重连续重复
+  def compress[A](list: Seq[A]): Seq[A] = list match {
     case Nil => Nil
-    case head :: sec :: tail if head == sec => compress(head :: compress(tail))
-    case head :: tail => head :: compress(tail)
+    case head :: sec :: tail if head == sec => compress(head +: compress(tail))
+    case head :: tail => head +: compress(tail)
   }
 
-  def cartesianProduct[A](list: List[List[A]])(implicit order: Ordering[A]) = {
+  // 生成集合
+  def cartesianProduct[A](list: Seq[Seq[A]])(implicit order: Ordering[A]) = {
     for {
       i <- Range(0, list.length) 
       j <- Range(i+1, list.length)
-    } yield compress((list(i) ++ list(j)).sorted.toList)
+    } yield compress((list(i) ++ list(j)).sorted)
   }
 
-  def countItemOfKeys[A](docs: List[List[A]])(keys: List[A]) = 
+  // 计算包含该键的项数
+  def countItemOfKeys[A](docs: Seq[Seq[A]])(keys: Seq[A]) = 
     docs.filter(doc => keys.forall(doc.contains)).length
 
-  def apriori[A](docs: List[List[A]], miniSup: Double)(implicit order: Ordering[A]) = {
+  def apriori[A](docs: Seq[Seq[A]], miniSup: Double)(implicit order: Ordering[A]) = {
       val docCnt = docs.length
-      val T1 = docs.flatMap(_.toList).map(t=> (t, 1)).groupBy(_._1)
-        .map(r => (r._1, r._2.length*1.0/docCnt))
-
-      var cutKeys = T1.filter(kv => kv._2 >= miniSup).toSeq.map(kv=> List(List(kv._1), kv._2)).toList
-      var keys = cutKeys.map(x => x(0).asInstanceOf[List[A]])
+      var cutKeys = docs
+        .flatMap(doc => compress(doc.sorted)) // 去除item 中重复的值
+        .groupBy(t => Seq(t))
+        .mapValues(_.length*1.0/docCnt) // 计算支持度
+        .filter(_._2 >= miniSup) // 剪枝
+        .toSeq
       var r = cutKeys
+      var keys = cutKeys.map(_._1)
+
       while (keys.length > 0) {
-        keys = cartesianProduct(keys).toList
-        cutKeys = compress(keys.map(
-          key => List(key, countItemOfKeys(docs.map(_.toList))(key)*1.0/docCnt)
-        ).filter(kv => kv(1).asInstanceOf[Double] >= miniSup)).toList
+        // 组成新值，并排序去重
+        keys = compress(cartesianProduct(keys).sortBy(_.toString).toList)
+        cutKeys = keys.map(
+          key => (key, countItemOfKeys(docs)(key)*1.0/docCnt) // 计算支持度
+        ).filter(_._2 >= miniSup) // 剪枝
         r = r ++ cutKeys
-        keys = compress(cutKeys.map(_(0).asInstanceOf[List[A]]).toList).toList
+        keys = cutKeys.map(_._1)
       }
-      r.sortWith(_(1).asInstanceOf[Double] > _(1).asInstanceOf[Double])
+      r
   }
 }
