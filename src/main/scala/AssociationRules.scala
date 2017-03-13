@@ -7,6 +7,28 @@
 
 package nextchen
 
+class FPNode(val name: String, val parent: Option[FPNode]=None, val neighbor: Option[FPNode]=None) {
+
+  private var cnt: Int = 1
+  private var children = scala.collection.mutable.Map[String, List[FPNode]]()
+
+  def increment() {
+    cnt = cnt + 1
+  }
+
+  def addChild(child: FPNode) {
+    var old = children.getOrElse(child.name, List[FPNode]())
+    children(child.name) = child :: old
+  }
+}
+
+object FPNode {
+  def apply() = new FPNode("")
+  def apply(name: String, parent: FPNode) = {
+    new FPNode(name, Some(parent))
+  }
+}
+
 object AssociationRules {
   /*
    * X => Y
