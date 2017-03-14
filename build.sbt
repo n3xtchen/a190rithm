@@ -9,6 +9,7 @@ lazy val commonSettings = Seq(
 )
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
+scalacOptions ++= Seq("-deprecation")
 
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)

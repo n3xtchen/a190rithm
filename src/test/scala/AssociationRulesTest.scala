@@ -8,9 +8,9 @@
 package nextchen
 
 import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 
-class AssociationRulesTest extends FunSpec with ShouldMatchers {
+class AssociationRulesTest extends FunSpec with Matchers {
   describe("关联分析") {
 
     val D = List(
@@ -23,8 +23,15 @@ class AssociationRulesTest extends FunSpec with ShouldMatchers {
     val miniSup = .6
 
     it("Apriori") {
-      AssociationRules.apriori(D, miniSup).foreach(println)
-      AssociationRules.aprioriRecur(D, miniSup).foreach(println)
+      // AssociationRules.apriori(D, miniSup).foreach(println)
+      // AssociationRules.aprioriRecur(D, miniSup).foreach(println)
+    }
+
+    it("FP-Growth") {
+      val fpGrowth = FPGrowth(' ')
+      for (item <- D) 
+        fpGrowth.add(item)
+      println(fpGrowth.tree.children('A'))
     }
   }
 }

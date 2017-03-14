@@ -7,25 +7,64 @@
 
 package nextchen
 
-class FPNode(val name: String, val parent: Option[FPNode]=None, val neighbor: Option[FPNode]=None) {
+// 树节点
+class FPNode[A](val name: A, neighbor: Option[FPNode[A]]=None) {
 
-  private var cnt: Int = 1
-  private var children = scala.collection.mutable.Map[String, List[FPNode]]()
+  var cnt: Int = 1
+  var children = scala.collection.mutable.Map[A, FPNode[A]]()
 
   def increment() {
     cnt = cnt + 1
   }
 
-  def addChild(child: FPNode) {
-    var old = children.getOrElse(child.name, List[FPNode]())
-    children(child.name) = child :: old
+  def getChild(name: A) = children.get(name)
+
+  def addChild(node: FPNode[A]) = getChild(node.name) match {
+    case Some(_: FPNode[A]) => throw new Exception("重复添加节点")
+    case None => {
+      children(node.name) = node
+    }
   }
+
+  override def toString() = s"FPNODE(name:$name,cnt:$cnt)"
 }
 
 object FPNode {
-  def apply() = new FPNode("")
-  def apply(name: String, parent: FPNode) = {
-    new FPNode(name, Some(parent))
+
+  // root 节点声明
+  // def apply[A]() = new FPNode(' ')
+  def apply[A](root: A) = new FPNode(root)
+
+  // 节点
+  def apply[A](name: A, neighbor: Option[FPNode[A]]) = new FPNode(name, neighbor)
+}
+
+class FPGrowth[A](val tree: FPNode[A]) {
+  var neighbor = scala.collection.mutable.Map[A, FPNode[A]]()
+
+  def add(transaction: List[A]) {
+    var node = tree
+    for (name <- transaction) {
+      node = node.getChild(name) match {
+        case Some(n: FPNode[A]) => {
+          n.increment()
+          n
+        }
+        case None => {
+          val s_neighbor = neighbor.get(name)
+          val newNode = FPNode(name, s_neighbor)
+          neighbor(name) = newNode
+          node.addChild(newNode)
+          newNode
+        }
+      }
+    }
+  } 
+}
+
+object FPGrowth {
+  def apply[A](root: A) = {
+    new FPGrowth(FPNode(root))
   }
 }
 
