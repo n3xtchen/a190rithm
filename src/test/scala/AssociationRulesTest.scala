@@ -23,8 +23,8 @@ class AssociationRulesTest extends FunSpec with Matchers {
     val miniSup = .6
 
     it("Apriori") {
-      // AssociationRules.apriori(D, miniSup).foreach(println)
-      // AssociationRules.aprioriRecur(D, miniSup).foreach(println)
+      AssociationRules.apriori(D, miniSup).foreach(println)
+      AssociationRules.aprioriRecur(D, miniSup).foreach(println)
     }
 
     it("FP-Growth") {

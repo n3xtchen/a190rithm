@@ -94,39 +94,31 @@ object AssociationRules {
   def countItemOfKeys[A](docs: Seq[Seq[A]])(keys: Seq[A]) = 
     docs.filter(doc => keys.forall(doc.contains)).length
 
-  def apriori[A](docs: Seq[Seq[A]], miniSup: Double)(implicit order: Ordering[A]) = {
-      val docCnt = docs.length
-      var cutKeys = docs
-        .flatMap(doc => compress(doc.sorted)) // 去除item 中重复的值
-        .groupBy(t => Seq(t))
-        .mapValues(_.length*1.0/docCnt) // 计算支持度
-        .filter(_._2 >= miniSup) // 剪枝
-        .toSeq
-      var r = cutKeys
-      var keys = cutKeys.map(_._1)
+  // 计算每一项的文档频数
+  def freqK1[A](docs: Seq[Seq[A]])(implicit order: Ordering[A]) = docs
+    .flatMap(doc => compress(doc.sorted)) // 去除item 中重复的值
+    .groupBy(t => Seq(t))
+    .mapValues(_.length*1.0) // 计算支持度
+    .toSeq
 
-      while (keys.length > 0) {
-        // 组成新值，并排序去重
-        keys = compress(cartesianProduct(keys).sortBy(_.toString).toList)
-        cutKeys = keys.map(
-          key => (key, countItemOfKeys(docs)(key)*1.0/docCnt) // 计算支持度
-        ).filter(_._2 >= miniSup) // 剪枝
-        r = r ++ cutKeys
-        keys = cutKeys.map(_._1)
-      }
-      r
+  def apriori[A](docs: Seq[Seq[A]], miniSup: Double)(implicit order: Ordering[A]) = {
+    val docCnt = docs.length
+    var cutKeys = freqK1(docs).filter(_._2/docCnt >= miniSup) // 剪枝
+
+    var r: Seq[(Seq[A], Double)] = Nil
+    do {
+      r = r ++ cutKeys
+      cutKeys = compress(cartesianProduct(cutKeys.map(_._1)).sortBy(_.toString).toList) // 组成新值，并排序去重
+        .map(key => (key, countItemOfKeys(docs)(key)*1.0)) // 计算支持度
+        .filter(_._2/docCnt >= miniSup) // 剪枝
+    } while (cutKeys.length > 0)
+    r
   }
 
   def aprioriRecur[A](docs: Seq[Seq[A]], miniSup: Double)(implicit order: Ordering[A]) = {
       val docCnt = docs.length
       // k = 1
-      var cutKeys = docs
-        .flatMap(doc => compress(doc.sorted)) // 去除item 中重复的值
-        .groupBy(t => Seq(t))
-        .mapValues(_.length*1.0/docCnt) // 计算支持度
-        .filter(_._2 >= miniSup) // 剪枝
-        .toSeq
-
+      var cutKeys = freqK1(docs).filter(_._2/docCnt >= miniSup) // 剪枝
       // k > 1
       def recur(keys: Seq[(Seq[A], Double)]): Seq[(Seq[A], Double)] = keys match {
         case Nil => Nil
@@ -134,8 +126,8 @@ object AssociationRules {
           // 组成新值，并排序去重
           val newKeys = compress(cartesianProduct(keys.map(_._1)).sortBy(_.toString).toList)
             .map(
-              key => (key, countItemOfKeys(docs)(key)*1.0/docCnt) // 计算支持度
-            ).filter(_._2 >= miniSup) // 剪枝
+              key => (key, countItemOfKeys(docs)(key)*1.0) // 计算支持度
+            ).filter(_._2/docCnt >= miniSup) // 剪枝
           newKeys ++ recur(newKeys)
         }
       }
