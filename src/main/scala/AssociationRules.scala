@@ -133,4 +133,21 @@ object AssociationRules {
       }
       cutKeys ++ recur(cutKeys)
   }
+
+  def fpGrowth[A](docs: Seq[Seq[A]], miniSup: Double)(implicit order: Ordering[A]) = {
+      val docCnt = docs.length
+      // k = 1
+      var cutKeys = freqK1(docs).filter(_._2/docCnt >= miniSup) // 剪枝
+      // 生成头表
+      val headTable = cutKeys.sortBy(-_._2)
+
+      // 基于头表排和去除剪枝
+      val keyOrder = headTable.map(_._1(0))
+      val newDocs = docs.map(doc => {
+        for {
+          k <- keyOrder
+          if doc.contains(k)
+        } yield k
+      }.toList)
+  }
 }
