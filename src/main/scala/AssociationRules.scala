@@ -8,7 +8,7 @@
 package nextchen
 
 // 树节点
-class FPNode[A](val name: A, neighbor: Option[FPNode[A]]=None) {
+class FPNode[A](val name: A, val parent: Option[FPNode[A]]=None, val neighbor: Option[FPNode[A]]=None) {
 
   var cnt: Int = 1
   var children = scala.collection.mutable.Map[A, FPNode[A]]()
@@ -36,7 +36,7 @@ object FPNode {
   def apply[A](root: A) = new FPNode(root)
 
   // 节点
-  def apply[A](name: A, neighbor: Option[FPNode[A]]) = new FPNode(name, neighbor)
+  def apply[A](name: A, parent: FPNode[A], neighbor: Option[FPNode[A]]) = new FPNode(name, Some(parent), neighbor)
 }
 
 class FPGrowth[A](val tree: FPNode[A]) {
@@ -52,7 +52,7 @@ class FPGrowth[A](val tree: FPNode[A]) {
         }
         case None => {
           val s_neighbor = neighbor.get(name)
-          val newNode = FPNode(name, s_neighbor)
+          val newNode = FPNode(name, node, s_neighbor)
           neighbor(name) = newNode
           node.addChild(newNode)
           newNode
@@ -60,6 +60,33 @@ class FPGrowth[A](val tree: FPNode[A]) {
       }
     }
   } 
+
+  def neighborhood(node: FPNode[A]): Seq[FPNode[A]] = node.neighbor match {
+    case Some(n) => {
+      Seq(node) ++ neighborhood(n)
+    }
+    case None => Seq(node)
+  }
+
+  /*
+   * 条件模式基
+   */
+  def conditionPatternBase(node: FPNode[A], minSup: Double, cnt: Int, subffix: Seq[A]=Nil): Seq[(Seq[A], Int)] = node.parent match {
+    case Some(n) => {
+      val sub = node.name +: subffix
+      Seq((sub, cnt)) ++ conditionPatternBase(n, minSup, cnt, sub)
+    }
+    case None => Nil
+  }
+
+  def run() {
+    val minSup = 2
+    for ((k, v) <- neighbor) {
+      for (x <- neighborhood(v)) {
+        conditionPatternBase(x, minSup, x.cnt).filter(_._2 > minSup).foreach(println)
+      }
+    }
+  }
 }
 
 object FPGrowth {
@@ -149,5 +176,15 @@ object AssociationRules {
           if doc.contains(k)
         } yield k
       }.toList)
+
+      val fpTree = FPGrowth(' '.asInstanceOf[A])
+      for (doc <- newDocs) {
+        fpTree.add(doc)
+      }
+
+      // newDocs.foreach(println)
+
+      headTable.foreach(println)
+      fpTree.run()
   }
 }
