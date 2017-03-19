@@ -61,38 +61,43 @@ class FPGrowth[A](val tree: FPNode[A]) {
     }
   } 
 
-  def addNode(transaction: Seq[FPNode[A]]) {
-    var node = tree
-    for (n <- transaction) {
-      var name = n.name
-      node = node.getChild(name) match {
-        case Some(n: FPNode[A]) => {
-          n
-        }
-        case None => {
-          node.addChild(n)
-          n
+  def addNode(paths: Seq[Seq[FPNode[A]]]) {
+    for (path <- paths) {
+      var parent = tree
+      var lastCnt = path.last.cnt
+      for (node <- path if node.name != tree.name) {
+        var name = node.name
+        var cnt = if (node.cnt >= lastCnt) lastCnt else node.cnt
+        parent = parent.getChild(name) match {
+          case Some(n: FPNode[A]) => {
+            n.cnt = n.cnt + cnt
+            n
+          }
+          case None => {
+            val s_neighbor = neighbor.get(name)
+            val newNode = FPNode(name, parent, s_neighbor)
+            newNode.cnt = cnt
+            neighbor(name) = newNode
+            parent.addChild(newNode)
+            newNode
+          }
         }
       }
     }
-  } 
+  }
 
-  /*
-   * 向（上）前（Root）匹配路径
-   */
-  def prefixPath(node: FPNode[A]) = {
-    def recurParent(node: Option[FPNode[A]]): Seq[FPNode[A]] = node match {
-      case Some(a) if a == tree => Nil
-      case Some(n) => recurParent(n.parent) ++ Seq(n) 
-    }
-    recurParent(node.parent) ++ Seq(node)
+}
+
+object FPGrowth {
+  def apply[A](root: A) = {
+    new FPGrowth(FPNode(root))
   }
 
   /*
    * 向后（右）寻找相邻的节点
    *
    */
-  def neighborhood(node: FPNode[A]): Seq[FPNode[A]] = node.neighbor match {
+  def neighborhood[A](node: FPNode[A]): Seq[FPNode[A]] = node.neighbor match {
     case Some(n) => {
       Seq(node) ++ neighborhood(n)
     }
@@ -100,41 +105,51 @@ class FPGrowth[A](val tree: FPNode[A]) {
   }
 
   /*
+   * 向（上）前（Root）匹配路径
+   */
+  def prefixPath[A](node: FPNode[A]) = {
+    def recurParent(node: Option[FPNode[A]]): Seq[FPNode[A]] = node match {
+      case Some(n) => recurParent(n.parent) ++ Seq(n) 
+      case None => Nil
+    }
+    recurParent(node.parent) ++ Seq(node)
+  }
+
+  /*
    * 条件模式基
    */
-  def conditionPatternBase(paths: Seq[Seq[FPNode[A]]]) = {
+  def conditionPatternBase[A](paths: Seq[Seq[FPNode[A]]]) = {
     val fpTree = FPGrowth(' '.asInstanceOf[A])
-    for (path <- paths) {
-      fpTree.addNode(path)
-    }
+    fpTree.addNode(paths)
     fpTree
   }
 
-  def findWithFilter(tree: FPNode[A], minSup: Double, subffix: Seq[A]=Nil): Seq[(Seq[A],Double)] = {
-    for ((k, v) <- neighbor) yield {
-      val neighborhood_n = neighborhood(v) 
+  // def findWithFilter[A](tree: FPGrowth[A], minSup: Double, subffix: Seq[A]=Nil): Seq[(List[A], Double)] = {
+  def findWithFilter[A](tree: FPGrowth[A], minSup: Double, subffix: Seq[A]=Nil, cnt: Double=0): Seq[Seq[Seq[Any]]] = {
+    tree.neighbor.map(kv => {
+      val k = kv._1
+      val v = kv._2
+      val neighborhood_n = FPGrowth.neighborhood(v) 
       val support = neighborhood_n.map(_.cnt).sum
-      var x = (subffix, 1.0)
-      if (support >= minSup) {
-        val newSubffix = k +: subffix
-        val prefixTree = neighborhood_n.map(prefixPath)
-        val condTree = conditionPatternBase(prefixTree).tree
-        for (s <- findWithFilter(condTree, minSup, newSubffix)) 
-          yield s
-        x = (newSubffix, support)
+      support match {
+        case _ if support >= minSup => {
+          val newSubffix = k +: subffix
+          val prefixTree = neighborhood_n.map(prefixPath)
+          prefixTree.map(_.map(x => x.name+":"+ x.cnt)).foreach(println)
+          val condTree = conditionPatternBase(prefixTree)
+          var tree1 = condTree.tree
+          // do {
+          //   println("n", tree1.name)
+          //   tree1 = tree1.children.toSeq(0)._2
+          // } while (tree1.children.toSeq.length > 0)
+          newSubffix +: findWithFilter(condTree, minSup, newSubffix)
+        }
+        case _ => {
+          println("b", k+:subffix, support)
+          Nil
+        }
       }
-      x
-    }
-  }
-
-  def run(minSup: Double) {
-    findWithFilter(tree, minSup).foreach(println)
-  }
-}
-
-object FPGrowth {
-  def apply[A](root: A) = {
-    new FPGrowth(FPNode(root))
+    }).toSeq
   }
 }
 
@@ -225,8 +240,28 @@ object AssociationRules {
         fpTree.add(doc)
       }
 
+      val d = fpTree.neighbor('D'.asInstanceOf[A])
+      println(d)
+      val dPrefix = FPGrowth.neighborhood(d).map(FPGrowth.prefixPath(_))
+      for (path <- dPrefix) {
+        println(path)
+      }
+      var cpb = FPGrowth.conditionPatternBase(dPrefix)
+
+      var dP = cpb.tree 
+      for (a <- Seq('B', 'C', 'D')) {
+        dP = dP.children(a.asInstanceOf[A])
+        println(dP)
+      }
+      dP = cpb.tree 
+      for (a <- Seq('B', 'D')) {
+        dP = dP.children(a.asInstanceOf[A])
+        println(dP)
+      }
+      cpb.neighbor.map(x=> x._1 -> FPGrowth.neighborhood(x._2).map(_.cnt).sum).foreach(println)
+      // FPGrowth.findWithFilter(fpTree, miniSup*docCnt).foreach(println)
       // headTable.foreach(println)
       // newDocs.foreach(println)
-      fpTree.run(miniSup*docCnt)
+      // fpTree.run(miniSup*docCnt)
   }
 }
