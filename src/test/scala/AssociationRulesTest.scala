@@ -37,10 +37,29 @@ class AssociationRulesTest extends FunSpec with Matchers {
     }
 
     it("FP-Tree 条件模式基") {
-      fpGrowth(D, miniSup)
+      // val d = fpTree.neighbor('D'.asInstanceOf[A])
+      // println(d)
+      // val dPrefix = FPGrowth.neighborhood(d).map(FPGrowth.prefixPath(_))
+      // for (path <- dPrefix) {
+      //   println(path)
+      // }
+      // var cpb = FPGrowth.conditionPatternBase(dPrefix)
+
+      // var dP = cpb.tree 
+      // for (a <- Seq('B', 'C')) {
+      //   dP = dP.children(a.asInstanceOf[A])
+      //   println(dP)
+      // }
+      // dP = cpb.tree 
+      // for (a <- Seq('B')) {
+      //   dP = dP.children(a.asInstanceOf[A])
+      //   println(dP)
+      // }
+      // cpb.neighbor.map(x=> x._1 -> FPGrowth.neighborhood(x._2).map(_.cnt).sum).foreach(println)
     }
 
     it("FPGowth 算法过程") {
+      fpGrowth(D, miniSup)
     }
   }
 }
