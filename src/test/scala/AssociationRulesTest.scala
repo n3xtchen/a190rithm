@@ -12,7 +12,6 @@ import org.scalatest.Matchers
 
 class AssociationRulesTest extends FunSpec with Matchers {
   describe("关联分析") {
-
     import AssociationRules._
 
     val D = List(
@@ -25,8 +24,8 @@ class AssociationRulesTest extends FunSpec with Matchers {
     val miniSup = .6
 
     it("Apriori") {
-      apriori(D, miniSup).foreach(println)
-      aprioriRecur(D, miniSup)// .foreach(println)
+      Apriori.apriori(D, miniSup).foreach(println)
+      Apriori.aprioriRecur(D, miniSup)// .foreach(println)
     }
 
     it("FP-Tree 构建") {
@@ -59,8 +58,9 @@ class AssociationRulesTest extends FunSpec with Matchers {
     }
 
     it("FPGowth 算法过程") {
-      fpGrowth(D, miniSup)
+      FPGrowth.fpGrowth(D, miniSup)
     }
+
   }
 }
 
