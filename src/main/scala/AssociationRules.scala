@@ -130,21 +130,24 @@ object FPGrowth {
     for ((k, v) <- tree.neighbor) yield {
       val neighborhood_n = FPGrowth.neighborhood(v) 
       val support = neighborhood_n.map(_.cnt).sum
-      support match {
-        case _ if support >= minSup => {
+        if (support >= minSup) {
           val newSubffix = k +: subffix
           val prefixTree = neighborhood_n.map(prefixPath)
           val condTree = conditionPatternBase(prefixTree)
-          if (condTree.tree.children.toSeq.length > 0) {
-            (newSubffix, support) +: findWithFilter(condTree, minSup, newSubffix)
-          } else {
-            Seq((newSubffix, support))
-          }
-        }
-        case _ => {
-          Nil
-        }
-      }
+          (newSubffix, support) +: findWithFilter(condTree, minSup, newSubffix)
+        } else Nil
+
+      // support match {
+      //   case _ if support >= minSup => {
+      //     val newSubffix = k +: subffix
+      //     val prefixTree = neighborhood_n.map(prefixPath)
+      //     val condTree = conditionPatternBase(prefixTree)
+      //     (newSubffix, support) +: findWithFilter(condTree, minSup, newSubffix)
+      //   }
+      //   case _ => {
+      //     Nil
+      //   }
+      // }
     }
   }.toSeq.flatten
 }
