@@ -36,15 +36,9 @@ class AssociationRulesTest extends FunSpec with Matchers {
     }
 
     it("FP-Tree 条件模式基") {
-      def Node(name: Char, cnt: Int) = {
-        var a = new FPNode(name, None, None)
-        a.cnt =cnt
-        a
-      }
-
       val cpb = Seq(
-        Seq(Node('a', 5), Node('b', 4), Node('c', 2)),
-        Seq(Node('a', 2), Node('c', 1))
+        Seq(('a', 5.0), ('b', 4.0), ('c', 2.0)),
+        Seq(('a', 2.0), ('c', 1.0))
         )
       var cpt = FPGrowth.conditionPatternTree(cpb)
 
