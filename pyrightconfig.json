@@ -1,0 +1,39 @@
+{
+  "include": [
+    "a190rithm"
+  ],
+  
+  "exclude": [
+    "**/__pycache__",
+    "src/experimental",
+    "src/typestubs"
+  ],
+
+  "ignore": [
+  ],
+
+  "defineConstant": {
+    "DEBUG": true
+  },
+
+  "stubPath": "a190rithm/stubs",
+  "venv": "/opt/miniconda3/envs/ai_pytorch/bin/python3.11",
+
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Darwin",
+
+  "executionEnvironments": [
+    {
+      "root": "a190rithm/tests",
+      "extraPaths": [
+        "a190rithm"
+      ]
+    },
+    {
+      "root": "a190rithm"
+    }
+  ]
+}
