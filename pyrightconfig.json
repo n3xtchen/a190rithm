@@ -16,11 +16,9 @@
     "DEBUG": true
   },
 
-  "stubPath": "a190rithm/stubs",
-  "venv": "/opt/miniconda3/envs/ai_pytorch/bin/python3.11",
+  "venv": "ai_pytorch",
 
   "reportMissingImports": true,
-  "reportMissingTypeStubs": false,
 
   "pythonVersion": "3.11",
   "pythonPlatform": "Darwin",
