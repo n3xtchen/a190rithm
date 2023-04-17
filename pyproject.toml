@@ -1,0 +1,24 @@
+[tool.pyright]
+include = ["a190rithm", "tests"]
+exclude = [
+  "**/__pycache__",
+]
+ignore = [
+  "build.sbt",
+  "src",
+  "project",
+  "target",
+  "sbt-launcher"
+]
+defineConstant = { DEBUG = true }
+venv = "ai_pytorch"
+
+reportMissingImports = true
+
+pythonVersion = "3.11"
+pythonPlatform = "Darwin"
+
+executionEnvironments = [
+  { root = "tests", extraPaths = ["."]},
+  { root = "." }
+]
