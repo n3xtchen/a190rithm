@@ -2,14 +2,14 @@
 include = ["a190rithm", "tests"]
 exclude = [
   "**/__pycache__",
-]
-ignore = [
   "build.sbt",
   "src",
   "project",
-  "target",
-  "sbt-launcher"
+  "target"
 ]
+ignore = [
+]
+
 defineConstant = { DEBUG = true }
 venv = "ai_pytorch"
 
