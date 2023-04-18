@@ -1,0 +1,57 @@
+{
+  "configurations": {
+    "run": {
+      "adapter": "debugpy",
+      "default": true,
+      "variables": {
+          "python": {
+            "shell": "/bin/bash -c 'which python'"
+          }
+      },
+      "configuration": {
+        "request": "launch",
+        "type": "python",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": true,
+        "program": "${file}",
+        "args": ["${Args}"],
+        "env": {
+          "PYTHONPATH": "${workspaceRoot}"
+        },
+        "python": "${python}"
+      },
+      "breakpoints": {
+        "exception": {
+          "raised": "N",
+          "uncaught": "",
+          "userUnhandled": ""
+        }
+      }
+    },
+    "test": {
+      "adapter": "debugpy",
+      "default": true,
+      "variables": {
+          "python": {
+            "shell": "/bin/bash -c 'which python'"
+          }
+      },
+      "configuration": {
+        "request": "launch",
+        "type": "python",
+        "module": "pytest",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": true,
+        "args": ["-k", "${Test}"],
+        "python": "${python}"
+      },
+      "breakpoints": {
+        "exception": {
+          "raised": "N",
+          "uncaught": "",
+          "userUnhandled": ""
+        }
+      }
+    }
+  }
+}
