@@ -3,7 +3,7 @@ based_on_style = "pep8"
 indent_width = 4
 
 [tool.pyright]
-include = ["a190rithm", "tests"]
+include = ["a190rithm", "tests", "stubs"]
 exclude = [
   "**/__pycache__",
   "build.sbt",
@@ -11,18 +11,28 @@ exclude = [
   "project",
   "target"
 ]
+
 ignore = [
 ]
 
 defineConstant = { DEBUG = true }
 venv = "ai_pytorch"
+stubPath = "stubs"
 
 reportMissingImports = true
+reportMissingTypeStubs = false
+reportIncompleteStub = true
+reportInvalidStubStatement = true 
+
+reportGeneralTypeIssues = false
+
+# self 都识别不了
+reportUndefinedVariable = false
 
 pythonVersion = "3.11"
 pythonPlatform = "Darwin"
 
 executionEnvironments = [
-  { root = "tests", extraPaths = ["."]},
+  { root = "tests", extraPaths = ["."] },
   { root = "." }
 ]
