@@ -16,28 +16,34 @@ from transformers.optimization import get_linear_schedule_with_warmup
 
 from a190rithm.utils import flat_accuracy, format_time
 
-class TextTokenizor:
+class BertTokenizerWithMaxLength(BertTokenizer):
     """
-    分词
+    为 BertTokenize 添加最大长度
+    todo: 添加自定义配置
+    - set_config(key, val), get_config(key)
     """
-    def __init__(self, pretrain_model_path: str, add_special_tokens=False):
-        self.model = BertTokenizer.from_pretrained(pretrain_model_path)
-        self.add_special_tokens = add_special_tokens
+    def set_max_length(self, max_length):
+        """
+        设置最长token数
+        """
+        self.init_kwargs["max_length"] = max_length
+        self.init_kwargs["add_special_tokens"] = True
 
-    def tokenize(self, text):
+    def get_max_lenght(self):
         """
-        分词
+        读取最长token数
         """
-        return self.model(text, add_special_tokens=self.add_special_tokens)["input_ids"]
+        return self.init_kwargs["max_length"]
 
-    def tokenize_plus(self, text, max_token_size: int):
+    def evaluate(self, text):
         """
-        填充 & 截断长度
+        根据配置填充和截断长度
         """
-        return self.model(
+        kwargs = self.init_kwargs
+        return self(
             text,  # 输入文本
-            add_special_tokens=True,  # 添加 '[CLS]' 和 '[SEP]'
-            max_length=max_token_size,
+            add_special_tokens=kwargs["max_length"],  # 添加 '[CLS]' 和 '[SEP]'
+            max_length=kwargs["max_length"],
             padding="max_length",  # 填充 & 截断长度
             return_attention_mask=True,  # 返回 attn. masks.
             # return_tensors='pt',  # 返回 pytorch tensors 格式的数据
