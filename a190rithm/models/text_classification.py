@@ -24,23 +24,23 @@ class TextTokenizor:
         self.model = BertTokenizer.from_pretrained(pretrain_model_path)
         self.add_special_tokens = add_special_tokens
 
-    def tokenize(self, text: str):
+    def tokenize(self, text):
         """
         分词
         """
-        return self.model.encode(text, add_special_tokens=self.add_special_tokens)
+        return self.model(text, add_special_tokens=self.add_special_tokens)["input_ids"]
 
-    def tokenize_plus(self, text: str, max_token_size: int):
+    def tokenize_plus(self, text, max_token_size: int):
         """
         填充 & 截断长度
         """
-        return self.model.encode_plus(
+        return self.model(
             text,  # 输入文本
             add_special_tokens=True,  # 添加 '[CLS]' 和 '[SEP]'
             max_length=max_token_size,
             padding="max_length",  # 填充 & 截断长度
             return_attention_mask=True,  # 返回 attn. masks.
-            return_tensors='pt',  # 返回 pytorch tensors 格式的数据
+            # return_tensors='pt',  # 返回 pytorch tensors 格式的数据
         )
 
 class TextClassification:
@@ -59,10 +59,8 @@ class TextClassification:
 
         # 训练 epochs。 BERT 作者建议在 2 和 4 之间，设大了容易过拟合
         self.epochs = epochs
-
-        # We'll store a number of quantities such as training and validation loss,
-        # validation accuracy, and timings.
-        self.training_stats = []
+        self.learning_rate = learning_rate
+        self.adam_epsilon = adam_epsilon
 
         self.device = "cpu"
         self.seed_val = 42
@@ -74,13 +72,15 @@ class TextClassification:
              output_hidden_states=False)
         self.model.to(self.device)
 
-        self.learning_rate = learning_rate
-        self.adam_epsilon = adam_epsilon
         self.optimizer = AdamW(
             self.model.parameters(),
             lr=self.learning_rate,  # args.learning_rate - default is 5e-5
             eps=self.adam_epsilon   # args.adam_epsilon  - default is 1e-8
         )
+
+        # We'll store a number of quantities such as training and validation loss,
+        # validation accuracy, and timings.
+        self.training_stats = []
 
     def set_seed(self, seed_val: int):
         """
@@ -161,7 +161,7 @@ class TextClassification:
                 self.model.zero_grad()
 
                 # Perform a forward pass (evaluate the model on this training batch).
-                model = self.model(b_input_ids,
+                output = self.model(b_input_ids,
                           token_type_ids=None,
                           attention_mask=b_input_mask,
                           labels=b_labels)
@@ -169,11 +169,11 @@ class TextClassification:
                 # Accumulate the training loss over all of the batches so that we can
                 # calculate the average loss at the end. `loss` is a Tensor containing a
                 # single value;
-                batch_loss = model.loss.item()
+                batch_loss = output.loss.item()
                 epoch_train_loss += batch_loss
 
                 # Perform a backward pass to calculate the gradients.
-                model.loss.backward()
+                output.loss.backward()
 
                 # Clip the norm of the gradients to 1.0.
                 # This is to help prevent the "exploding gradients" problem.
@@ -238,29 +238,23 @@ class TextClassification:
         # Tracking variables
         total_eval_accuracy = 0
         total_eval_loss = 0
-        # nb_eval_steps = 0
 
-        # Evaluate data for one epoch
         for batch in dataloader:
             b_input_ids = batch["input_ids"].to(self.device)
             b_input_mask = batch["attention_mask"].to(self.device)
             b_labels = batch["label"].to(self.device)
 
-            # Tell pytorch not to bother with constructing the compute graph during
-            # the forward pass, since this is only needed for backprop (training).
             with torch.no_grad():
-                # Forward pass, calculate logit predictions.
-                model = self.model(b_input_ids,
+                output = self.model(b_input_ids,
                            token_type_ids=None,
                            attention_mask=b_input_mask,
                            labels=b_labels)
 
-            # Accumulate the validation loss.
-            total_eval_loss += model.loss.item()
+            total_eval_loss += output.loss.item()
 
-            # Move logits and labels to CPU
-            logits = model.logits.detach().cpu().numpy()
-            label_ids = b_labels.to('cpu').numpy()
+            # detach 相当于深拷贝, 后续的对该值操作和 model.logits 脱钩
+            logits = output.logits.detach().cpu().numpy()
+            label_ids = b_labels.cpu().numpy()
 
             # Calculate the accuracy for this batch of test sentences, and
             # accumulate it over all batches.
