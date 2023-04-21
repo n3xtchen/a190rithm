@@ -42,11 +42,11 @@ class BertTokenizerWithMaxLength(BertTokenizer):
         kwargs = self.init_kwargs
         return self(
             text,  # 输入文本
-            add_special_tokens=kwargs["max_length"],  # 添加 '[CLS]' 和 '[SEP]'
+            add_special_tokens=kwargs["add_special_tokens"],  # 添加 '[CLS]' 和 '[SEP]'
             max_length=kwargs["max_length"],
             padding="max_length",  # 填充 & 截断长度
             return_attention_mask=True,  # 返回 attn. masks.
-            # return_tensors='pt',  # 返回 pytorch tensors 格式的数据
+            return_tensors='pt',  # 返回 pytorch tensors 格式的数据
         )
 
 class TextClassification:
