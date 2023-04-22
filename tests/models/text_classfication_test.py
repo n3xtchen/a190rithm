@@ -33,7 +33,7 @@ def test_tokenizer():
     max_length = max(train_data["token_size"])
 
     tokenizer.set_max_length(max_length)
-    assert tokenizer.get_max_lenght() == 47
+    assert tokenizer.max_length == 47
 
     tokenizer.save_pretrained(FINE_TUNE_FILE)
     max_token_size = BertTokenizerWithMaxLength.from_pretrained(

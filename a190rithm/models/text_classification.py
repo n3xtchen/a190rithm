@@ -2,10 +2,8 @@
 文本分类
 """
 
-import random
 import time
 
-import numpy as np
 import torch
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
@@ -14,7 +12,8 @@ from transformers.models.bert.modeling_bert import \
 from transformers.models.bert.tokenization_bert import BertTokenizer
 from transformers.optimization import get_linear_schedule_with_warmup
 
-from a190rithm.utils import flat_accuracy, format_time
+from a190rithm.utils import flat_accuracy, format_time, init_seed
+
 
 class BertTokenizerWithMaxLength(BertTokenizer):
     """
@@ -22,108 +21,124 @@ class BertTokenizerWithMaxLength(BertTokenizer):
     todo: 添加自定义配置
     - set_config(key, val), get_config(key)
     """
-    def set_max_length(self, max_length):
+
+    def set_max_length(self, max_length: int):
         """
         设置最长token数
         """
         self.init_kwargs["max_length"] = max_length
         self.init_kwargs["add_special_tokens"] = True
 
-    def get_max_lenght(self):
+    @property
+    def max_length(self):
         """
         读取最长token数
         """
         return self.init_kwargs["max_length"]
 
-    def evaluate(self, text):
+    def evaluate(self, text: list[str]):
         """
         根据配置填充和截断长度
         """
-        kwargs = self.init_kwargs
         return self(
             text,  # 输入文本
-            add_special_tokens=kwargs["add_special_tokens"],  # 添加 '[CLS]' 和 '[SEP]'
-            max_length=kwargs["max_length"],
+            max_length=self.max_length,
             padding="max_length",  # 填充 & 截断长度
+            add_special_tokens=self.init_kwargs[
+                "add_special_tokens"],  # 添加 '[CLS]' 和 '[SEP]'
             return_attention_mask=True,  # 返回 attn. masks.
             return_tensors='pt',  # 返回 pytorch tensors 格式的数据
         )
+
 
 class TextClassification:
     """
     文本分类器
     """
 
-    def __init__(self,
-                 pretrain_model_path: str,
-                 category_size=2,
-                 epochs=4,
-                 learning_rate=5e-5,
-                 adam_epsilon=1e-8):
+    # 默认超参数
+    hyper_params = {
+        "seed_val": 42,
+        "epochs": 4,  # 训练 epochs。 BERT 作者建议在 2 和 4 之间，设大了容易过拟合
+        "learning_rate": 5e-5,
+        "epsilon": 1e-8
+    }
+
+    _model: BertForSequenceClassification = None
+    _optimizer: AdamW = None
+
+    # 训练效果统计
+    training_stats = []
+
+    def __init__(self, pretrain_model_path: str, category_size=2, **kwargs):
+
         self.pretrain_model_path = pretrain_model_path
         self.category_size = category_size
 
-        # 训练 epochs。 BERT 作者建议在 2 和 4 之间，设大了容易过拟合
-        self.epochs = epochs
-        self.learning_rate = learning_rate
-        self.adam_epsilon = adam_epsilon
-
-        self.device = "cpu"
-        self.seed_val = 42
-
-        self.model: BertForSequenceClassification = BertForSequenceClassification.from_pretrained(
-             self.pretrain_model_path,
-             num_labels=self.category_size,
-             output_attentions=False,
-             output_hidden_states=False)
-        self.model.to(self.device)
-
-        self.optimizer = AdamW(
-            self.model.parameters(),
-            lr=self.learning_rate,  # args.learning_rate - default is 5e-5
-            eps=self.adam_epsilon   # args.adam_epsilon  - default is 1e-8
-        )
-
-        # We'll store a number of quantities such as training and validation loss,
-        # validation accuracy, and timings.
-        self.training_stats = []
+        for hyper_param in self.hyper_params:
+            if hyper_param in kwargs:
+                self.hyper_params[hyper_param] = kwargs[hyper_param]
 
     def set_seed(self, seed_val: int):
         """
         设置种子值
         """
-        self.seed_val = seed_val
+        self.hyper_params["seed_val"] = seed_val
 
-    def init_seed(self):
+    @property
+    def device(self):
         """
-        Set the seed value all over the place to make this reproducible.
+        模型配置的设备
         """
-        random.seed(self.seed_val)
-        np.random.seed(self.seed_val)
-        torch.manual_seed(self.seed_val)
-        torch.cuda.manual_seed_all(self.seed_val)
+        return self.model.device
 
-    def to(self, device):
+    # pylint: disable=invalid-name
+    def to(self, device: str):
         """
-        切换硬件
+        切换设备
         """
-        self.device = device
         self.model.to(device)
 
-    def train(self, train_dataloader: DataLoader, validation_dataloader: DataLoader):
+    @property
+    def model(self):
+        """获取或者初始化model"""
+        if self._model is None:
+            self._model = \
+                    BertForSequenceClassification.from_pretrained(
+                self.pretrain_model_path,
+                num_labels=self.category_size,
+                output_attentions=False,
+                output_hidden_states=False)
+        return self._model
+
+    @property
+    def optimizer(self):
+        """获取或者初始化优化器"""
+        if self._optimizer is None:
+            self._optimizer = AdamW(
+                self.model.parameters(),
+                lr=self.hyper_params[
+                    "learning_rate"],  # args.learning_rate - default is 5e-5
+                eps=self.hyper_params[
+                    "epsilon"]  # args.adam_epsilon  - default is 1e-8
+            )
+        return self._optimizer
+
+    def train(self, train_dataloader: DataLoader,
+              validation_dataloader: DataLoader):
         """
         模型训练
         """
-        # 总的训练样本数
-        total_steps = len(train_dataloader) * self.epochs
+        init_seed(self.hyper_params["seed_val"])
 
         # 创建学习率调度器
         scheduler = get_linear_schedule_with_warmup(
-            self.optimizer, num_warmup_steps=0, num_training_steps=total_steps)
+            self.optimizer,
+            num_warmup_steps=0,
+            num_training_steps=len(train_dataloader) *
+            self.hyper_params["epochs"])
 
-        self.init_seed()
-
-        for epoch_i in range(0, self.epochs):
+        for epoch_i in range(0, self.hyper_params["epochs"]):
 
             # ========================================
             #               Training
@@ -132,7 +147,9 @@ class TextClassification:
             # Perform one full pass over the training set.
 
             print("")
-            print(f'======== Epoch {epoch_i+1:} / {self.epochs:} ========')
+            print(
+                f'======== Epoch {epoch_i+1:} / {self.hyper_params["epochs"]:} ========'
+            )
             print('Training...')
 
             # Measure how long the training epoch takes.
@@ -141,56 +158,42 @@ class TextClassification:
             # Reset the total loss for this epoch.
             epoch_train_loss = 0
 
-            batch_loss = 0
-            # Put the model into training mode. Don't be mislead--the call to
-            # `train` just changes the *mode*, it doesn't *perform* the training.
-            # `dropout` and `batchnorm` layers behave differently during training
+            # 进入训练模式
             self.model.train()
 
             # For each batch of training data...
             for step, batch in enumerate(train_dataloader):
-                # Progress update every 40 batches.
-                if step % 40 == 0 and not step == 0:
-                    elapsed = format_time(time.time() - epoch_start_time)
 
-                    print((
-                        f'  Batch {step:>5,}  of  {len(train_dataloader):>5,}. '
-                        f'     Loss: {batch_loss:.4f}.'
-                        f'     Elapsed: {elapsed:}.'))
-
-                b_input_ids = batch["input_ids"].to(self.device)
-                b_input_mask = batch["attention_mask"].to(self.device)
-                b_labels = batch["label"].to(self.device)
-
-                # Always clear any previously calculated gradients before performing a
-                # backward pass.
                 self.model.zero_grad()
 
                 # Perform a forward pass (evaluate the model on this training batch).
-                output = self.model(b_input_ids,
-                          token_type_ids=None,
-                          attention_mask=b_input_mask,
-                          labels=b_labels)
+                (loss, _) = self.model.forward(
+                    batch["input_ids"].to(self.device),
+                    token_type_ids=None,
+                    attention_mask=batch["attention_mask"].to(self.device),
+                    labels=batch["label"].to(self.device)).to_tuple()
 
                 # Accumulate the training loss over all of the batches so that we can
                 # calculate the average loss at the end. `loss` is a Tensor containing a
                 # single value;
-                batch_loss = output.loss.item()
-                epoch_train_loss += batch_loss
+                epoch_train_loss += loss.item()
 
-                # Perform a backward pass to calculate the gradients.
-                output.loss.backward()
+                # Progress update every 40 batches.
+                if step % 40 == 0 and not step == 0:
+                    print((
+                        f'  Batch {step:>5,}  of  {len(train_dataloader):>5,}. '
+                        f'     Loss: {loss.item():.4f}.'
+                        f'     Elapsed: {format_time(time.time() - epoch_start_time):}.'
+                    ))
+
+                loss.backward()
 
                 # Clip the norm of the gradients to 1.0.
                 # This is to help prevent the "exploding gradients" problem.
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
-                # Update parameters and take a step using the computed gradient.
-                # The optimizer dictates the "update rule"--how the parameters are
-                # modified based on their gradients, the learning rate, etc.
                 self.optimizer.step()
 
-                # Update the learning rate.
                 scheduler.step()
 
             # Calculate the average loss over all of the batches.
@@ -198,11 +201,10 @@ class TextClassification:
 
             # Measure how long this epoch took.
             epoch_elapsed = time.time() - epoch_start_time
-            epoch_training_time = format_time(epoch_elapsed)
 
             print("")
             print(f"  Average training loss: {avg_epoch_train_loss:.2f}")
-            print(f"  Training epcoh took: {epoch_training_time:}")
+            print(f"  Training epcoh took: {format_time(epoch_elapsed):}")
 
             # # ========================================
             # #               Validation
@@ -213,12 +215,12 @@ class TextClassification:
             print("")
             print("Running Validation...")
 
-            avg_val_loss, avg_val_accuracy, val_elapsed = self.test(validation_dataloader).values()
-            validation_time = format_time(val_elapsed)
+            avg_val_loss, avg_val_accuracy, val_elapsed = self.test(
+                validation_dataloader).values()
 
             print(f"  Validation Loss: {avg_val_loss:.2f}")
             print(f"  Validation Accuracy: {avg_val_accuracy:.2f}")
-            print(f"  Validation took: {validation_time:}")
+            print(f"  Validation took: {format_time(val_elapsed):}")
 
             # Record all statistics from this epoch.
             self.training_stats.append({
@@ -234,11 +236,9 @@ class TextClassification:
         """
         measure our performance on our dataset.
         """
-
         start_time = time.time()
 
-        # Put the model in evaluation mode--the dropout layers behave differently
-        # during evaluation.
+        # 进入推理模式
         self.model.eval()
 
         # Tracking variables
@@ -251,15 +251,15 @@ class TextClassification:
             b_labels = batch["label"].to(self.device)
 
             with torch.no_grad():
-                output = self.model(b_input_ids,
-                           token_type_ids=None,
-                           attention_mask=b_input_mask,
-                           labels=b_labels)
+                (loss, logits) = self.model.forward(b_input_ids,
+                                              token_type_ids=None,
+                                              attention_mask=b_input_mask,
+                                              labels=b_labels).to_tuple()
 
-            total_eval_loss += output.loss.item()
+            total_eval_loss += loss.item()
 
             # detach 相当于深拷贝, 后续的对该值操作和 model.logits 脱钩
-            logits = output.logits.detach().cpu().numpy()
+            logits = logits.detach().cpu().numpy()
             label_ids = b_labels.cpu().numpy()
 
             # Calculate the accuracy for this batch of test sentences, and
