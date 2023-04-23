@@ -169,7 +169,7 @@ class TextClassification:
                 # Perform a forward pass (evaluate the model on this training batch).
                 (loss, _) = self.model.forward(
                     batch["input_ids"].to(self.device),
-                    token_type_ids=None,
+                    token_type_ids=batch["token_type_ids"].to(self.device),
                     attention_mask=batch["attention_mask"].to(self.device),
                     labels=batch["label"].to(self.device)).to_tuple()
 
