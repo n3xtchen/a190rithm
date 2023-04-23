@@ -42,6 +42,7 @@
         "module": "pytest",
         "cwd": "${workspaceRoot}",
         "stopOnEntry": true,
+        "program": "${file}",
         "args": ["-k", "${Test}"],
         "python": "${python}"
       },
