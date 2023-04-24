@@ -251,10 +251,11 @@ class TextClassification:
             b_labels = batch["label"].to(self.device)
 
             with torch.no_grad():
-                (loss, logits) = self.model.forward(b_input_ids,
-                                              token_type_ids=None,
-                                              attention_mask=b_input_mask,
-                                              labels=b_labels).to_tuple()
+                (loss, logits) = self.model.forward(
+                    b_input_ids,
+                    token_type_ids=batch["token_type_ids"].to(self.device),
+                    attention_mask=b_input_mask,
+                    labels=b_labels).to_tuple()
 
             total_eval_loss += loss.item()
 
