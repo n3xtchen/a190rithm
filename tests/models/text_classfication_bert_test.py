@@ -16,7 +16,7 @@ MODEL_FILE = (f'{CACHE_DIR}bert-base-multilingual-cased/snapshots/'
 FINE_TUNE_FILE = '/Users/nextchen/Dev/project_pig/a190rithm/data/fine_tuned_model'
 
 
-def test_tokenizer():
+def test_bert_tokenizer():
     """
     测试文本分类
     """
@@ -42,7 +42,7 @@ def test_tokenizer():
     assert max_token_size == 47
 
 
-def test_text_classfication():
+def test_bert_text_classfication():
     """
     测试文本分类
     """
@@ -65,7 +65,7 @@ def test_text_classfication():
     validate_dataloader = DataLoader(validate_data, batch_size=32)
 
     classification = TextClassification(MODEL_FILE,
-                                        epochs=4,
+                                        epochs=1,
                                         learning_rate=2e-5,
                                         adam_epsilon=1e-8)
     classification.to('mps')
@@ -73,7 +73,7 @@ def test_text_classfication():
     classification.model.save_pretrained(FINE_TUNE_FILE)
 
 
-def test_text_classfication_inference():
+def test_bert_text_classfication_inference():
     """
     测试分类模型推理
     """
