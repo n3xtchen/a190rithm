@@ -6,7 +6,7 @@ from datasets.builder import Dataset
 from datasets.load import load_dataset
 from torch.utils.data import DataLoader
 
-from a190rithm.models.text_classification import (BertTokenizerWithMaxLength,
+from a190rithm.models.text_classification_bert import (BertTokenizerWithMaxLength,
                                                   TextClassification)
 from a190rithm.utils import format_time
 
@@ -65,7 +65,7 @@ def test_text_classfication():
     validate_dataloader = DataLoader(validate_data, batch_size=32)
 
     classification = TextClassification(MODEL_FILE,
-                                        epochs=1,
+                                        epochs=4,
                                         learning_rate=2e-5,
                                         adam_epsilon=1e-8)
     classification.to('mps')
@@ -90,10 +90,7 @@ def test_text_classfication_inference():
         columns=["input_ids", "token_type_ids", "attention_mask", "label"])
     test_dataloader = DataLoader(test_data, batch_size=32)
 
-    classification = TextClassification(FINE_TUNE_FILE,
-                                        epochs=2,
-                                        learning_rate=2e-5,
-                                        adam_epsilon=1e-8)
+    classification = TextClassification(FINE_TUNE_FILE)
     classification.to('mps')
 
     avg_test_loss, avg_test_accuracy, test_elapsed = classification.test(
