@@ -51,7 +51,7 @@ class BertTokenizerWithMaxLength(BertTokenizer):
         )
 
 
-class TextClassification:
+class BertTextClassification:
     """
     文本分类器
     """
