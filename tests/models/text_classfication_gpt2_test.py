@@ -5,7 +5,6 @@
 from datasets.builder import Dataset
 from datasets.load import load_dataset
 from torch.utils.data import DataLoader
-from transformers import GPT2Tokenizer
 
 from a190rithm.models.text_classification_gpt2 import (
     GPT2TokenizerWithMaxLength, GPT2TextClassification)
@@ -24,7 +23,6 @@ def test_gpt_tokenizer():
     data: Dataset = load_dataset("glue", "cola")
     train_data = data["train"]
 
-    tokenizer = GPT2Tokenizer.from_pretrained(MODEL_FILE)
     tokenizer = GPT2TokenizerWithMaxLength.from_pretrained(MODEL_FILE)
 
     train_data = train_data.map(lambda row: {
