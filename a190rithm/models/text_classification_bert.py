@@ -164,7 +164,7 @@ class BertTextClassification:
             # For each batch of training data...
             for step, batch in enumerate(train_dataloader):
 
-                self.model.zero_grad()
+                self.optimizer.zero_grad()
 
                 # Perform a forward pass (evaluate the model on this training batch).
                 (loss, _) = self.model.forward(
