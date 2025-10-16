@@ -19,7 +19,7 @@ ignore = [
 ]
 
 defineConstant = { DEBUG = true }
-venv = "ai_pytorch"
+venv = "homelab_test"
 stubPath = "stubs"
 
 reportMissingImports = true
