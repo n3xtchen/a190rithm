@@ -9,17 +9,14 @@ addopts = "--capture=no"
 include = ["a190rithm", "tests", "stubs"]
 exclude = [
   "**/__pycache__",
-  "build.sbt",
-  "src",
-  "project",
-  "target"
+  "a190rithm/torch"
+  "tests/torch"
 ]
 
 ignore = [
 ]
 
 defineConstant = { DEBUG = true }
-venv = "homelab_test"
 stubPath = "stubs"
 
 reportMissingImports = true
@@ -31,9 +28,6 @@ reportGeneralTypeIssues = false
 
 # self 都识别不了
 reportUndefinedVariable = false
-
-pythonVersion = "3.11"
-pythonPlatform = "Darwin"
 
 executionEnvironments = [
   { root = "tests", extraPaths = ["."] },

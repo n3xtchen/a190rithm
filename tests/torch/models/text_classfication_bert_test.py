@@ -6,9 +6,9 @@ from datasets.builder import Dataset
 from datasets.load import load_dataset
 from torch.utils.data import DataLoader
 
-from a190rithm.models.text_classification_bert import (BertTokenizerWithMaxLength,
+from a190rithm.torch.models.text_classification_bert import (BertTokenizerWithMaxLength,
                                                   BertTextClassification)
-from a190rithm.utils import format_time
+from a190rithm.torch.utils import format_time
 
 CACHE_DIR = "/Users/nextchen/.cache/huggingface/hub/models--"
 MODEL_FILE = (f'{CACHE_DIR}bert-base-multilingual-cased/snapshots/'

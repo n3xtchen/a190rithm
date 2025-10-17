@@ -6,9 +6,9 @@ from datasets.builder import Dataset
 from datasets.load import load_dataset
 from torch.utils.data import DataLoader
 
-from a190rithm.models.text_classification_gpt2 import (
+from a190rithm.torch.models.text_classification_gpt2 import (
     GPT2TokenizerWithMaxLength, GPT2TextClassification)
-from a190rithm.utils import format_time
+from a190rithm.torch.utils import format_time
 
 CACHE_DIR = "/Users/nextchen/.cache/huggingface/hub/models--"
 MODEL_FILE = (f'{CACHE_DIR}gpt2/snapshots/'
