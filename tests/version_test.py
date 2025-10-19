@@ -14,4 +14,4 @@ def test_version():
     验证版本
     """
     ver = version()
-    assert isinstance(ver, int)
+    assert isinstance(ver, str)

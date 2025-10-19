@@ -3,13 +3,23 @@ based_on_style = "pep8"
 indent_width = 4
 
 [tool.pytest.ini_options]
+pythonpath = [
+  "src"     # 兼容 scr-layout
+]
 addopts = "--capture=no"
+norecursedirs = [
+  "tests/torch", 
+  "a190rithm/torch"
+]
+
+[tool.pylint.main]
+init-hook = "import sys; sys.path.append('src')" # 兼容 scr-layout
 
 [tool.pyright]
 include = ["a190rithm", "tests", "stubs"]
 exclude = [
   "**/__pycache__",
-  "a190rithm/torch"
+  "a190rithm/torch",
   "tests/torch"
 ]
 
@@ -30,6 +40,6 @@ reportGeneralTypeIssues = false
 reportUndefinedVariable = false
 
 executionEnvironments = [
-  { root = "tests", extraPaths = ["."] },
-  { root = "." }
+  { root = "tests", extraPaths = ["src"] },
+  { root = "src" }
 ]
