@@ -43,3 +43,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+
+data/
+stubs/
