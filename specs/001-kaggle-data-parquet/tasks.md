@@ -15,10 +15,10 @@
 
 **独立测试标准**: 项目可以成功构建，并通过基本的健全性测试
 
-- [ ] T001 初始化项目结构，创建目录并设置 src/a190rithm/tools/kaggle_downloader 包
-- [ ] T002 配置项目依赖关系，创建 pyproject.toml/setup.py 文件，包含所需依赖
-- [ ] T003 [P] 创建 data 目录结构和 .gitignore 文件，确保数据文件不会被提交
-- [ ] T004 [P] 配置 pytest 测试环境，包括测试目录和基本配置
+- [x] T001 初始化项目结构，创建目录并设置 src/a190rithm/tools/kaggle_downloader 包
+- [x] T002 配置项目依赖关系，创建 pyproject.toml/setup.py 文件，包含所需依赖
+- [x] T003 [P] 创建 data 目录结构和 .gitignore 文件，确保数据文件不会被提交
+- [x] T004 [P] 配置 pytest 测试环境，包括测试目录和基本配置
 
 ### Phase 2: 基础组件
 
@@ -26,10 +26,10 @@
 
 **独立测试标准**: 基础组件可以独立测试，并提供预期功能
 
-- [ ] T005 实现异常类层次结构 src/a190rithm/tools/kaggle_downloader/exceptions.py
-- [ ] T006 [P] 实现日志工具类 src/a190rithm/tools/kaggle_downloader/utils/logging_utils.py，集成 structlog 和标准库 logging
-- [ ] T007 [P] 实现重试工具类 src/a190rithm/tools/kaggle_downloader/utils/retry_utils.py，支持指数退避策略
-- [ ] T008 实现配置管理类 src/a190rithm/tools/kaggle_downloader/config.py，支持从文件和环境变量加载配置
+- [x] T005 实现异常类层次结构 src/a190rithm/tools/kaggle_downloader/exceptions.py
+- [x] T006 [P] 实现日志工具类 src/a190rithm/tools/kaggle_downloader/utils/logging_utils.py，集成 structlog 和标准库 logging
+- [x] T007 [P] 实现重试工具类 src/a190rithm/tools/kaggle_downloader/utils/retry_utils.py，支持指数退避策略
+- [x] T008 实现配置管理类 src/a190rithm/tools/kaggle_downloader/config.py，支持从文件和环境变量加载配置
 
 ### Phase 3: 用户故事1 - 数据科学家从 Kaggle 下载指定数据集
 
@@ -37,13 +37,13 @@
 
 **独立测试标准**: 能够通过提供数据集标识符成功下载 Kaggle 数据集到本地
 
-- [ ] T009 [US1] 实现 Dataset 数据模型 src/a190rithm/tools/kaggle_downloader/models.py，定义数据集属性和方法
-- [ ] T010 [US1] 实现 DataFile 数据模型 src/a190rithm/tools/kaggle_downloader/models.py，定义数据文件属性和方法
-- [ ] T011 [US1] 实现 KaggleClient 类 src/a190rithm/tools/kaggle_downloader/kaggle_client.py，封装 Kaggle API 交互
-- [ ] T012 [P] [US1] 实现 API 凭证管理，支持系统密钥环或环境变量，确保凭证安全存储
-- [ ] T013 [US1] 实现数据集下载功能，包括验证、获取元数据和文件下载
-- [ ] T014 [US1] 实现下载状态跟踪，使用日志文件和状态文件记录进度
-- [ ] T015 [US1] 实现 CLI 下载命令接口 src/a190rithm/tools/kaggle_downloader/cli.py，处理下载命令及选项
+- [x] T009 [US1] 实现 Dataset 数据模型 src/a190rithm/tools/kaggle_downloader/models.py，定义数据集属性和方法
+- [x] T010 [US1] 实现 DataFile 数据模型 src/a190rithm/tools/kaggle_downloader/models.py，定义数据文件属性和方法
+- [x] T011 [US1] 实现 KaggleClient 类 src/a190rithm/tools/kaggle_downloader/kaggle_client.py，封装 Kaggle API 交互
+- [x] T012 [P] [US1] 实现 API 凭证管理，支持系统密钥环或环境变量，确保凭证安全存储
+- [x] T013 [US1] 实现数据集下载功能，包括验证、获取元数据和文件下载
+- [x] T014 [US1] 实现下载状态跟踪，使用日志文件和状态文件记录进度
+- [x] T015 [US1] 实现 CLI 下载命令接口 src/a190rithm/tools/kaggle_downloader/cli.py，处理下载命令及选项
 
 ### Phase 4: 用户故事2 - 将下载的数据转换为 Parquet 格式
 
@@ -51,7 +51,7 @@
 
 **独立测试标准**: 能够将 CSV、JSON 等格式的文件转换为 Parquet 格式，并验证内容一致性
 
-- [ ] T016 [US2] 实现 ParquetFile 数据模型 src/a190rithm/tools/kaggle_downloader/models.py，定义 Parquet 文件属性和方法
+- [x] T016 [US2] 实现 ParquetFile 数据模型 src/a190rithm/tools/kaggle_downloader/models.py，定义 Parquet 文件属性和方法
 - [ ] T017 [US2] 实现 DataConverter 类 src/a190rithm/tools/kaggle_downloader/converter.py，提供格式转换功能
 - [ ] T018 [P] [US2] 实现文件格式检测功能，确定文件类型并验证是否支持转换
 - [ ] T019 [US2] 实现 CSV 转换功能，支持处理各种 CSV 变体和选项
@@ -122,18 +122,45 @@ git checkout -b task/test-environment
 # 实现T003, T004
 ```
 
-**并行组2: 用户故事1 (下载)**
+**并行组2: 基础组件**
 ```bash
 # 开发者1:
-git checkout -b task/kaggle-client
-# 实现T009, T010, T011, T013
+git checkout -b task/exception-handling
+# 实现T005
 
 # 开发者2:
-git checkout -b task/api-credentials
-# 实现T012
+git checkout -b task/logging
+# 实现T006
+
+# 开发者3:
+git checkout -b task/retry-utils
+# 实现T007
+
+# 开发者4:
+git checkout -b task/config-management
+# 实现T008
 ```
 
-**并行组3: 用户故事2 (转换)**
+**并行组3: 用户故事1 (下载)**
+```bash
+# 开发者1:
+git checkout -b task/data-models
+# 实现T009, T010
+
+# 开发者2:
+git checkout -b task/kaggle-client
+# 实现T011, T013
+
+# 开发者3:
+git checkout -b task/api-credentials
+# 实现T012
+
+# 开发者4:
+git checkout -b task/download-status
+# 实现T014
+```
+
+**并行组4: 用户故事2 (转换)**
 ```bash
 # 开发者1:
 git checkout -b task/data-converter
@@ -148,7 +175,18 @@ git checkout -b task/multi-processing
 # 实现T022
 ```
 
-**并行组4: 测试与文档**
+**并行组5: 用户故事3 (存储)**
+```bash
+# 开发者1:
+git checkout -b task/storage-manager
+# 实现T024, T025
+
+# 开发者2:
+git checkout -b task/directory-structure
+# 实现T026, T027
+```
+
+**并行组6: 测试与文档**
 ```bash
 # 开发者1:
 git checkout -b task/unit-tests
