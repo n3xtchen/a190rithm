@@ -34,17 +34,21 @@ class KaggleClient:
         key: Optional[str] = None,
         timeout: int = 600,
         max_retries: int = 3,
-        retry_backoff_factor: float = 0.5
+        retry_backoff_factor: float = 0.5,
+        use_keyring: bool = True,
+        ssl_verify: bool = True
     ):
         """
         初始化 Kaggle 客户端。
 
         参数:
-            username: Kaggle 用户名，如果为 None 则从环境变量或配置获取
-            key: Kaggle API 密钥，如果为 None 则从环境变量或配置获取
+            username: Kaggle 用户名，如果为 None 则从密钥环、环境变量或配置获取
+            key: Kaggle API 密钥，如果为 None 则从密钥环、环境变量或配置获取
             timeout: 请求超时时间（秒）
             max_retries: 最大重试次数
             retry_backoff_factor: 重试退避因子
+            use_keyring: 是否使用系统密钥环存储凭证
+            ssl_verify: 是否验证SSL证书
         """
         pass
 

@@ -65,7 +65,7 @@ specs/[###-feature]/
 ```text
 src/
 ├── a190rithm/
-│   ├── applications/
+│   ├── tools/
 │   │   ├── kaggle_downloader/
 │   │   │   ├── __init__.py
 │   │   │   ├── cli.py                   # 命令行入口点
@@ -99,7 +99,7 @@ data/                               # 数据存储目录
 └── .gitignore                      # 忽略数据文件，只保留目录结构
 ```
 
-**结构说明**: 选择单一项目结构（Option 1），符合现有的 src-layout 项目组织方式。将功能作为 a190rithm 包的一个应用模块实现，保持代码组织清晰并方便集成到现有项目中。测试目录按模块划分，便于管理和执行特定测试。
+**结构说明**: 选择单一项目结构（Option 1），符合现有的 src-layout 项目组织方式。将功能作为 a190rithm 包的一个工具模块实现，保持代码组织清晰并方便集成到现有项目中。测试目录按模块划分，便于管理和执行特定测试。
 
 ## Complexity Tracking
 

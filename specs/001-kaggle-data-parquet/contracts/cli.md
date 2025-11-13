@@ -123,10 +123,12 @@ kaggle-parquet list [OPTIONS]
 
 ## 环境变量
 
-- `KAGGLE_USERNAME`: Kaggle 用户名
-- `KAGGLE_KEY`: Kaggle API 密钥
+- `KAGGLE_USERNAME`: Kaggle 用户名（如果未使用密钥环）
+- `KAGGLE_KEY`: Kaggle API 密钥（如果未使用密钥环）
 - `KAGGLE_PARQUET_CONFIG_PATH`: 配置文件路径
 - `KAGGLE_PARQUET_OUTPUT_DIR`: 数据输出目录
+- `KAGGLE_PARQUET_LOG_LEVEL`: 日志级别（覆盖配置文件设置）
+- `KAGGLE_PARQUET_USE_KEYRING`: 是否使用系统密钥环（1=是，0=否）
 
 ## 配置文件格式
 
@@ -164,4 +166,11 @@ logging:
   file: ~/.kaggle-parquet/logs/kaggle-parquet.log
   rotation: 5MB
   max_files: 3
+  format: "structured"  # "structured" 或 "text"
+  include_timestamps: true
+
+# 安全设置
+security:
+  use_keyring: true    # 是否使用系统密钥环
+  allow_insecure: false  # 是否允许不安全连接
 ```

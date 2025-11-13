@@ -44,14 +44,30 @@ pip install -e .
 
 有多种方法可以设置你的 Kaggle API 凭证：
 
-#### 方法 1: 环境变量
+#### 方法 1: 系统密钥环（推荐）
+
+使用系统密钥环是最安全的方式，凭证不会以明文形式存储：
+
+```bash
+# 设置凭证到系统密钥环
+kaggle-parquet config --set-kaggle-credentials --use-keyring
+```
+
+这将使用系统的安全存储机制：
+- Windows: Windows 凭证管理器
+- macOS: 钥匙串
+- Linux: Secret Service API / GNOME Keyring
+
+#### 方法 2: 环境变量
+
+如果不能使用密钥环，可以通过环境变量设置：
 
 ```bash
 export KAGGLE_USERNAME=your_username
 export KAGGLE_KEY=your_key
 ```
 
-#### 方法 2: 配置文件
+#### 方法 3: 配置文件
 
 使用交互式配置命令：
 
@@ -67,9 +83,9 @@ kaggle:
   key: your_key
 ```
 
-#### 方法 3: 直接传递参数
+#### 方法 4: 直接传递参数
 
-在使用命令行或 Python API 时直接传递凭证参数（不推荐）：
+在使用命令行或 Python API 时直接传递凭证参数（仅推荐用于测试）：
 
 ```bash
 kaggle-parquet download username/dataset-name --kaggle-username your_username --kaggle-key your_key
@@ -131,6 +147,15 @@ dataset, parquet_files = download_and_convert("username/dataset-name")
 # 查看结果
 print(f"下载的文件: {len(dataset.files)}")
 print(f"转换的 Parquet 文件: {len(parquet_files)}")
+
+# 使用更多参数
+dataset, parquet_files = download_and_convert(
+    "username/dataset-name",
+    output_dir="./my_data",
+    compression="zstd",
+    processes=4,
+    force=True
+)
 ```
 
 #### 使用客户端类
@@ -236,7 +261,8 @@ except ConversionError as e:
 **解决方案**:
 1. 确认你的 Kaggle API 凭证是否有效
 2. 检查环境变量是否正确设置
-3. 使用 `kaggle-parquet config --set-kaggle-credentials` 重新配置
+3. 使用 `kaggle-parquet config --set-kaggle-credentials --use-keyring` 重新配置
+4. 在非交互式环境中，确保已配置环境变量或配置文件
 
 ### 大文件处理
 
@@ -264,6 +290,24 @@ except ConversionError as e:
 1. 增加 `--retries` 参数值
 2. 使用更稳定的网络连接
 3. 利用 `--force` 参数继续未完成的下载
+
+### 系统密钥环问题
+
+**问题**: 在某些环境中无法使用系统密钥环。
+
+**解决方案**:
+1. 确认已安装相关系统库（如 `python-keyring`, `dbus-python` 等）
+2. 如无法使用密钥环，可通过 `--no-keyring` 参数禁用密钥环，改用环境变量
+3. 在 CI/CD 环境中，请使用环境变量方式
+
+### 权限问题
+
+**问题**: 存储文件时出现权限错误。
+
+**解决方案**:
+1. 检查 `data` 目录的写入权限
+2. 指定一个当前用户有写入权限的其他目录: `--output-dir ~/my_data`
+3. 如使用 Docker，确保挂载了正确的数据卷并设置了适当权限
 
 ## 下一步
 
