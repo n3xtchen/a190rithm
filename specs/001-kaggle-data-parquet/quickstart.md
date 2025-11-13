@@ -123,7 +123,7 @@ kaggle-parquet list --format json
 #### 简单用法
 
 ```python
-from a190rithm.applications.kaggle_downloader import download_and_convert
+from a190rithm.tools.kaggle_downloader import download_and_convert
 
 # 下载并转换
 dataset, parquet_files = download_and_convert("username/dataset-name")
@@ -136,7 +136,7 @@ print(f"转换的 Parquet 文件: {len(parquet_files)}")
 #### 使用客户端类
 
 ```python
-from a190rithm.applications.kaggle_downloader import KaggleClient, DataConverter
+from a190rithm.tools.kaggle_downloader import KaggleClient, DataConverter
 
 # 初始化客户端
 client = KaggleClient()
@@ -165,7 +165,7 @@ kaggle-parquet convert large_data.csv --partition-by year,month
 ```
 
 ```python
-from a190rithm.applications.kaggle_downloader import DataConverter
+from a190rithm.tools.kaggle_downloader import DataConverter
 
 converter = DataConverter()
 parquet_files = converter.convert_file("large_data.csv", partition_by=["year", "month"])
@@ -180,7 +180,7 @@ kaggle-parquet convert huge_data.csv --chunk-size 50000 --processes 4
 ```
 
 ```python
-from a190rithm.applications.kaggle_downloader import DataConverter
+from a190rithm.tools.kaggle_downloader import DataConverter
 
 converter = DataConverter(chunk_size=50000, processes=4)
 parquet_files = converter.convert_file("huge_data.csv")
@@ -191,7 +191,7 @@ parquet_files = converter.convert_file("huge_data.csv")
 自定义数据集的存储结构：
 
 ```python
-from a190rithm.applications.kaggle_downloader import StorageManager, KaggleClient
+from a190rithm.tools.kaggle_downloader import StorageManager, KaggleClient
 
 # 自定义存储结构
 storage = StorageManager(
@@ -210,7 +210,7 @@ print(f"数据集存储在: {path}")
 ### 错误处理
 
 ```python
-from a190rithm.applications.kaggle_downloader import (
+from a190rithm.tools.kaggle_downloader import (
     download_and_convert,
     KaggleAPIError,
     DownloadError,

@@ -7,7 +7,7 @@
 ## 模块结构
 
 ```python
-from a190rithm.applications.kaggle_downloader import (
+from a190rithm.tools.kaggle_downloader import (
     KaggleClient,
     DataConverter,
     StorageManager,
@@ -393,7 +393,7 @@ def download_and_convert(
 
 ```python
 # 基本用法
-from a190rithm.applications.kaggle_downloader import download_and_convert
+from a190rithm.tools.kaggle_downloader import download_and_convert
 
 # 下载并转换数据集
 dataset, parquet_files = download_and_convert(
@@ -409,7 +409,7 @@ for pf in parquet_files:
     print(f"{pf.filename}: {pf.rows} 行, 压缩比 {pf.compression_ratio:.2f}")
 
 # 高级用法
-from a190rithm.applications.kaggle_downloader import KaggleClient, DataConverter, StorageManager
+from a190rithm.tools.kaggle_downloader import KaggleClient, DataConverter, StorageManager
 
 # 初始化客户端
 client = KaggleClient(
