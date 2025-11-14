@@ -236,9 +236,11 @@ def handle_download(args: argparse.Namespace) -> int:
     """
     from .kaggle_client import KaggleClient
     from .download_tracker import DownloadTracker
+    from .converter import DataConverter
+    from .storage import StorageManager
     from .exceptions import (
         AuthenticationError, DatasetNotFoundError,
-        DownloadError, KaggleAPIError
+        DownloadError, KaggleAPIError, ConversionError, StorageError
     )
     from .utils.logging_utils import setup_logging
 
@@ -296,10 +298,45 @@ def handle_download(args: argparse.Namespace) -> int:
             print("跳过转换，下载过程已完成")
             return 0
 
-        # 否则继续转换
+        # 进行转换
         print("开始转换文件为 Parquet 格式...")
-        # 这里调用转换逻辑，暂时只打印信息
-        print("转换功能将在后续实现")
+
+        # 创建转换器
+        converter = DataConverter(
+            compression="snappy",  # 默认使用snappy压缩
+            processes=args.concurrent  # 使用与下载相同的并发数
+        )
+
+        # 转换文件
+        parquet_output_dir = os.path.join(os.path.dirname(dataset.files[0].path), "parquet")
+        os.makedirs(parquet_output_dir, exist_ok=True)
+
+        try:
+            parquet_files = converter.convert_dataset(
+                files=dataset.files,
+                output_dir=parquet_output_dir,
+                force=args.force
+            )
+
+            print(f"转换完成: {len(parquet_files)}/{len(dataset.files)} 个文件成功转换")
+
+            # 创建存储管理器
+            storage_manager = StorageManager(base_dir=args.output_dir)
+
+            # 存储转换后的文件
+            print("存储转换后的文件...")
+            storage_dir = storage_manager.store_parquet_files(dataset, parquet_files)
+
+            print(f"数据集已存储到: {storage_dir}")
+            print("可以使用 'kaggle-parquet list' 命令查看已下载的数据集")
+
+        except ConversionError as e:
+            print(f"转换错误: {e}")
+            return 5
+
+        except StorageError as e:
+            print(f"存储错误: {e}")
+            return 6
 
         return 0
 
@@ -603,15 +640,14 @@ def handle_list(args: argparse.Namespace) -> int:
     返回:
         int: 退出状态码
     """
-    import glob
     import json
     import os
-    from pathlib import Path
     import tabulate
     import csv
     import sys
 
     from .config import Config
+    from .storage import StorageManager
     from .utils.logging_utils import setup_logging
 
     # 设置日志级别
@@ -625,114 +661,123 @@ def handle_list(args: argparse.Namespace) -> int:
     # 获取数据目录
     config = Config(args.config)
     base_dir = os.path.expanduser(config.get("output.dir", "./data"))
-    kaggle_dir = os.path.join(base_dir, "kaggle")
 
-    if not os.path.exists(kaggle_dir):
-        print(f"Kaggle 数据目录不存在: {kaggle_dir}")
-        return 0
+    # 创建存储管理器
+    storage_manager = StorageManager(base_dir=base_dir)
 
-    # 查找所有数据集目录
-    dataset_dirs = glob.glob(os.path.join(kaggle_dir, "*"))
-    if not dataset_dirs:
-        print("未找到任何下载的数据集")
-        return 0
-
-    # 收集数据集信息
-    datasets = []
-    for dataset_dir in dataset_dirs:
-        metadata_file = os.path.join(dataset_dir, "metadata.json")
-        if not os.path.exists(metadata_file):
-            continue
-
+    # 获取过滤模式
+    pattern = None
+    if args.filter:
+        # 提取过滤参数
         try:
-            with open(metadata_file, "r", encoding="utf-8") as f:
-                metadata = json.load(f)
-
-            # 应用过滤器（如果有）
-            if args.filter:
-                filter_key, filter_value = args.filter.split("=", 1)
-                if filter_key not in metadata or str(metadata[filter_key]) != filter_value:
-                    continue
-
-            # 计算原始数据和 Parquet 数据的大小
-            original_size = 0
-            parquet_size = 0
-            parquet_dir = os.path.join(dataset_dir, "parquet")
-
-            # 如果存在原始数据目录
-            original_dir = os.path.join(dataset_dir, "original")
-            if os.path.exists(original_dir):
-                for root, _, files in os.walk(original_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        original_size += os.path.getsize(file_path)
-
-            # 如果存在 Parquet 数据目录
-            if os.path.exists(parquet_dir):
-                for root, _, files in os.walk(parquet_dir):
-                    for file in files:
-                        if file.endswith(".parquet"):
-                            file_path = os.path.join(root, file)
-                            parquet_size += os.path.getsize(file_path)
-
-            # 格式化大小信息
-            original_size_mb = original_size / 1024 / 1024
-            parquet_size_mb = parquet_size / 1024 / 1024
-            compression_ratio = parquet_size / original_size if original_size > 0 else 0
-
-            # 收集基本信息
-            dataset_info = {
-                "id": metadata.get("id", "unknown"),
-                "name": metadata.get("name", "unknown"),
-                "owner": metadata.get("owner", "unknown"),
-                "timestamp": metadata.get("timestamp", "unknown"),
-                "status": metadata.get("status", "unknown"),
-                "files": len(metadata.get("files", [])),
-                "original_size": f"{original_size_mb:.2f} MB",
-                "parquet_size": f"{parquet_size_mb:.2f} MB",
-                "compression_ratio": f"{compression_ratio:.2f}" if compression_ratio > 0 else "N/A",
-                "path": dataset_dir
-            }
-
-            datasets.append(dataset_info)
-
+            filter_parts = args.filter.split("=", 1)
+            if len(filter_parts) == 2:
+                key, value = filter_parts
+                if key == "name":
+                    pattern = value
+                # 暂时只支持按名称过滤，后续可以扩展
+            else:
+                # 如果没有等号，将整个过滤器视为名称模式
+                pattern = args.filter
         except Exception as e:
-            print(f"读取元数据文件 {metadata_file} 失败: {e}")
+            print(f"解析过滤器失败: {e}")
 
-    if not datasets:
-        print("未找到符合条件的数据集")
+    # 列出数据集
+    try:
+        datasets = storage_manager.list_datasets(
+            pattern=pattern,
+            detail=args.detail,
+            limit=100  # 设置一个合理的限制，防止输出过多
+        )
+
+        if not datasets:
+            print("未找到符合条件的数据集")
+            return 0
+
+        # 输出结果
+        if args.format == "json":
+            # JSON 格式输出
+            json.dump(datasets, sys.stdout, ensure_ascii=False, indent=2)
+        elif args.format == "csv":
+            # CSV 格式输出
+            if not datasets:
+                print("没有数据可导出为CSV")
+                return 0
+
+            # 确保所有记录有相同的字段
+            all_keys = set()
+            for dataset in datasets:
+                all_keys.update(dataset.keys())
+
+            # 将缺失的键添加到每个记录
+            for dataset in datasets:
+                for key in all_keys:
+                    if key not in dataset:
+                        dataset[key] = ""
+
+            writer = csv.DictWriter(sys.stdout, fieldnames=sorted(list(all_keys)))
+            writer.writeheader()
+            writer.writerows(datasets)
+        else:
+            # 表格格式输出
+            if args.detail:
+                # 详细表格 - 展示部分元数据信息
+                headers = ["名称", "数据集引用", "创建日期", "文件数量", "大小", "路径"]
+                rows = []
+
+                for d in datasets:
+                    # 数据集名称
+                    name = d.get("name", "")
+
+                    # 数据集引用
+                    dataset_ref = ""
+                    if "dataset" in d and isinstance(d["dataset"], dict):
+                        dataset_ref = d["dataset"].get("ref", "")
+
+                    # 创建日期
+                    created = ""
+                    if "storage" in d and isinstance(d["storage"], dict):
+                        created = d["storage"].get("created_at", "").split("T")[0]
+
+                    # 文件数量
+                    file_count = 0
+                    if "parquet_files" in d and isinstance(d["parquet_files"], list):
+                        file_count = len(d["parquet_files"])
+
+                    # 大小信息
+                    size = "未知"
+                    if "parquet_files" in d and isinstance(d["parquet_files"], list):
+                        total_size = sum(pf.get("size", 0) for pf in d["parquet_files"])
+                        size = f"{total_size / 1024 / 1024:.2f} MB"
+
+                    # 路径
+                    path = d.get("dir", "")
+
+                    rows.append([name, dataset_ref, created, file_count, size, path])
+            else:
+                # 简单表格
+                headers = ["名称", "数据集引用", "文件数", "创建日期", "路径"]
+                rows = []
+
+                for d in datasets:
+                    name = d.get("name", "")
+                    dataset_ref = d.get("dataset_ref", "")
+                    file_count = d.get("file_count", 0)
+                    created = d.get("created", "").split("T")[0] if d.get("created") else ""
+                    path = d.get("path", "")
+
+                    rows.append([name, dataset_ref, file_count, created, path])
+
+            print(tabulate.tabulate(rows, headers=headers, tablefmt="psql"))
+
+            # 打印汇总信息
+            print(f"\n找到 {len(datasets)} 个数据集")
+
         return 0
 
-    # 输出结果
-    if args.format == "json":
-        # JSON 格式输出
-        json.dump(datasets, sys.stdout, ensure_ascii=False, indent=2)
-    elif args.format == "csv":
-        # CSV 格式输出
-        writer = csv.DictWriter(sys.stdout, fieldnames=datasets[0].keys())
-        writer.writeheader()
-        writer.writerows(datasets)
-    else:
-        # 表格格式输出
-        if args.detail:
-            # 详细表格
-            headers = ["ID", "名称", "所有者", "时间", "状态", "文件数", "原始大小", "Parquet大小", "压缩比"]
-            rows = [
-                [d["id"], d["name"], d["owner"], d["timestamp"], d["status"], d["files"],
-                 d["original_size"], d["parquet_size"], d["compression_ratio"]]
-                for d in datasets
-            ]
-        else:
-            # 简单表格
-            headers = ["名称", "所有者", "文件数", "原始大小", "状态"]
-            rows = [
-                [d["name"], d["owner"], d["files"], d["original_size"], d["status"]]
-                for d in datasets
-            ]
-
-        print(tabulate.tabulate(rows, headers=headers, tablefmt="psql"))
-
-    return 0
+    except Exception as e:
+        print(f"列出数据集时发生错误: {e}")
+        return 1
 
 
 def main(argv: Optional[List[str]] = None) -> int:

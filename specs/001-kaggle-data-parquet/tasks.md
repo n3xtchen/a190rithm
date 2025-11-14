@@ -52,13 +52,13 @@
 **独立测试标准**: 能够将 CSV、JSON 等格式的文件转换为 Parquet 格式，并验证内容一致性
 
 - [x] T016 [US2] 实现 ParquetFile 数据模型 src/a190rithm/tools/kaggle_downloader/models.py，定义 Parquet 文件属性和方法
-- [ ] T017 [US2] 实现 DataConverter 类 src/a190rithm/tools/kaggle_downloader/converter.py，提供格式转换功能
-- [ ] T018 [P] [US2] 实现文件格式检测功能，确定文件类型并验证是否支持转换
-- [ ] T019 [US2] 实现 CSV 转换功能，支持处理各种 CSV 变体和选项
-- [ ] T020 [US2] 实现 JSON 转换功能，支持处理平面和嵌套 JSON 结构
-- [ ] T021 [US2] 实现 Excel 转换功能，支持 .xls 和 .xlsx 格式
-- [ ] T022 [US2] 实现多进程转换功能，优化大型数据集处理性能
-- [ ] T023 [US2] 实现 CLI 转换命令接口 src/a190rithm/tools/kaggle_downloader/cli.py，处理转换命令及选项
+- [x] T017 [US2] 实现 DataConverter 类 src/a190rithm/tools/kaggle_downloader/converter.py，提供格式转换功能
+- [x] T018 [P] [US2] 实现文件格式检测功能，确定文件类型并验证是否支持转换
+- [x] T019 [US2] 实现 CSV 转换功能，支持处理各种 CSV 变体和选项
+- [x] T020 [US2] 实现 JSON 转换功能，支持处理平面和嵌套 JSON 结构
+- [x] T021 [US2] 实现 Excel 转换功能，支持 .xls 和 .xlsx 格式
+- [x] T022 [US2] 实现多进程转换功能，优化大型数据集处理性能
+- [x] T023 [US2] 实现 CLI 转换命令接口 src/a190rithm/tools/kaggle_downloader/cli.py，处理转换命令及选项
 
 ### Phase 5: 用户故事3 - 将转换后的 Parquet 文件存储到 data 目录
 
@@ -66,11 +66,11 @@
 
 **独立测试标准**: 能够将 Parquet 文件存储到 data 目录中，并按数据集名称加时间戳组织
 
-- [ ] T024 [US3] 实现 StorageManager 类 src/a190rithm/tools/kaggle_downloader/storage.py，管理文件存储
-- [ ] T025 [US3] 实现数据集元数据保存功能，生成和存储 metadata.json 文件
-- [ ] T026 [P] [US3] 实现目录结构创建，按照 data/kaggle/{dataset_name}_{timestamp}/ 格式
-- [ ] T027 [US3] 实现存储路径管理，处理文件路径和目录结构
-- [ ] T028 [US3] 实现 CLI 列表命令接口 src/a190rithm/tools/kaggle_downloader/cli.py，处理列表命令及选项
+- [x] T024 [US3] 实现 StorageManager 类 src/a190rithm/tools/kaggle_downloader/storage.py，管理文件存储
+- [x] T025 [US3] 实现数据集元数据保存功能，生成和存储 metadata.json 文件
+- [x] T026 [P] [US3] 实现目录结构创建，按照 data/kaggle/{dataset_name}_{timestamp}/ 格式
+- [x] T027 [US3] 实现存储路径管理，处理文件路径和目录结构
+- [x] T028 [US3] 实现 CLI 列表命令接口 src/a190rithm/tools/kaggle_downloader/cli.py，处理列表命令及选项
 
 ### Phase 6: 完善与集成
 
@@ -78,11 +78,11 @@
 
 **独立测试标准**: 完整功能可以通过命令行和 Python API 使用，并通过所有测试
 
-- [ ] T029 实现辅助函数 download_and_convert，提供一站式数据下载和转换功能
-- [ ] T030 完善 CLI 主入口 src/a190rithm/tools/kaggle_downloader/__main__.py 和 entry_points 配置
-- [ ] T031 [P] 编写单元测试，覆盖各个组件和功能
-- [ ] T032 [P] 编写集成测试，验证端到端流程
-- [ ] T033 编写文档和使用示例，包括 README 和内联文档
+- [x] T029 实现辅助函数 download_and_convert，提供一站式数据下载和转换功能
+- [x] T030 完善 CLI 主入口 src/a190rithm/tools/kaggle_downloader/__main__.py 和 entry_points 配置
+- [x] T031 [P] 编写单元测试，覆盖各个组件和功能
+- [x] T032 [P] 编写集成测试，验证端到端流程
+- [x] T033 编写文档和使用示例，包括 README 和内联文档
 
 ## 依赖关系
 
