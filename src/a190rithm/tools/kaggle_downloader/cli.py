@@ -330,9 +330,160 @@ def handle_convert(args: argparse.Namespace) -> int:
     返回:
         int: 退出状态码
     """
-    # 将在实现功能后完成
-    print(f"转换数据: {args.path}")
-    return 0
+    import os
+    import glob
+    from pathlib import Path
+    import time
+    from tqdm import tqdm
+
+    from .converter import DataConverter
+    from .exceptions import ConversionError, UnsupportedFormatError
+    from .models import DataFile
+    from .utils.logging_utils import setup_logging
+
+    # 设置日志级别
+    if args.verbose:
+        setup_logging(level="DEBUG")
+    elif args.quiet:
+        setup_logging(level="WARNING")
+    else:
+        setup_logging(level=args.log_level)
+
+    # 创建转换器
+    converter = DataConverter(
+        compression=args.compression,
+        chunk_size=args.chunk_size,
+        row_group_size=args.row_group_size,
+        preserve_index=args.preserve_index,
+        partition_cols=args.partition_by.split(",") if args.partition_by else None,
+        processes=args.processes
+    )
+
+    # 处理分区列
+    partition_cols = None
+    if args.partition_by:
+        partition_cols = [col.strip() for col in args.partition_by.split(",")]
+
+    # 准备输出目录
+    output_dir = os.path.dirname(args.path) if os.path.isfile(args.path) else args.path
+    output_dir = os.path.join(output_dir, "parquet")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 收集需要转换的文件
+    files_to_convert = []
+    total_size = 0
+
+    # 根据路径是文件还是目录进行不同处理
+    if os.path.isfile(args.path):
+        # 单个文件
+        try:
+            file_path = args.path
+            file_size = os.path.getsize(file_path)
+            file_format = converter.detect_format(file_path)
+
+            if not converter.is_supported_format(file_format):
+                print(f"警告: 文件格式不受支持: {file_path}")
+                return 2
+
+            data_file = DataFile(
+                filename=os.path.basename(file_path),
+                format=file_format,
+                size=file_size,
+                path=file_path
+            )
+            files_to_convert.append(data_file)
+            total_size += file_size
+            print(f"将转换文件: {file_path} ({file_format.value} 格式)")
+
+        except Exception as e:
+            print(f"处理文件时出错: {e}")
+            return 1
+    else:
+        # 目录
+        path_pattern = args.path
+        if args.recursive:
+            # 递归搜索
+            search_pattern = os.path.join(path_pattern, "**", "*")
+            file_paths = glob.glob(search_pattern, recursive=True)
+        else:
+            # 非递归搜索
+            search_pattern = os.path.join(path_pattern, "*")
+            file_paths = glob.glob(search_pattern, recursive=False)
+
+        # 筛选文件并排除目录
+        file_paths = [p for p in file_paths if os.path.isfile(p)]
+
+        if not file_paths:
+            print(f"没有找到文件: {search_pattern}")
+            return 1
+
+        # 添加到转换列表
+        supported_count = 0
+        unsupported_count = 0
+
+        for file_path in tqdm(file_paths, desc="检查文件"):
+            try:
+                file_size = os.path.getsize(file_path)
+                file_format = converter.detect_format(file_path)
+
+                if converter.is_supported_format(file_format):
+                    data_file = DataFile(
+                        filename=os.path.relpath(file_path, path_pattern),
+                        format=file_format,
+                        size=file_size,
+                        path=file_path
+                    )
+                    files_to_convert.append(data_file)
+                    total_size += file_size
+                    supported_count += 1
+                else:
+                    unsupported_count += 1
+            except Exception as e:
+                print(f"处理文件 {file_path} 时出错: {e}")
+
+        print(f"找到 {len(file_paths)} 个文件: {supported_count} 个支持转换, {unsupported_count} 个不支持")
+
+    # 如果没有可转换的文件，退出
+    if not files_to_convert:
+        print("没有找到可转换的文件")
+        return 0
+
+    # 执行转换
+    print(f"开始转换 {len(files_to_convert)} 个文件 (总大小: {total_size / 1024 / 1024:.2f} MB)")
+
+    start_time = time.time()
+    try:
+        parquet_files = converter.convert_dataset(
+            files=files_to_convert,
+            output_dir=output_dir,
+            force=args.force
+        )
+
+        # 计算总转换时间和压缩比
+        elapsed_time = time.time() - start_time
+        total_parquet_size = sum(f.size for f in parquet_files)
+        compression_ratio = total_parquet_size / total_size if total_size > 0 else 1.0
+
+        print(f"转换完成: {len(parquet_files)}/{len(files_to_convert)} 个文件成功转换")
+        print(f"原始数据大小: {total_size / 1024 / 1024:.2f} MB")
+        print(f"Parquet 数据大小: {total_parquet_size / 1024 / 1024:.2f} MB")
+        print(f"平均压缩比: {compression_ratio:.2f}")
+        print(f"总耗时: {elapsed_time:.2f} 秒")
+        print(f"输出目录: {output_dir}")
+
+        return 0
+
+    except ConversionError as e:
+        print(f"转换错误: {e}")
+        return 3
+
+    except UnsupportedFormatError as e:
+        print(f"不支持的格式: {e}")
+        return 4
+
+    except Exception as e:
+        print(f"未知错误: {e}")
+        return 1
 
 
 def handle_config(args: argparse.Namespace) -> int:
