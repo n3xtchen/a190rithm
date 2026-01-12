@@ -8,10 +8,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 代码结构
 
-- src/a19rithm
-  - applications: 代码应用
-    - data_loader.py
-    - model.py
+```text
+specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+
+src/
+├── a190rithm/
+│   ├── tools/
+│   │   ├── kaggle_downloader/
+│   │   └── __init__.py
+│   ├── applications/
+│   │   └── __init__.py
+│   └── __init__.py
+└── __init__.py
+
+tests/
+├── kaggle_downloader/
+│   ├── __init__.py
+│   ├── test_cli.py
+│   ├── test_kaggle_client.py
+│   ├── test_converter.py
+│   ├── test_storage.py
+│   └── test_utils/
+│       ├── __init__.py
+│       ├── test_logging_utils.py
+│       └── test_retry_utils.py
+└── __init__.py
+
+data/                               # 数据存储目录
+└── .gitignore                      # 忽略数据文件，只保留目录结构
+```
+
+**结构说明**: 选择单一项目结构（Option 1），符合现有的 src-layout 项目组织方式。将功能作为 a190rithm 包的一个工具模块实现，保持代码组织清晰并方便集成到现有项目中。测试目录按模块划分，便于管理和执行特定测试。
 
 ## 主要开发命令
 

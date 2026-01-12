@@ -51,7 +51,7 @@
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
+specs/001-kaggle-data-parquet/
 ├── plan.md              # This file (/speckit.plan command output)
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
