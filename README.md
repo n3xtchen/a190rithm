@@ -37,3 +37,11 @@
   - 随机梯度下降（SGD, Stochastic Gradient Descent）
   - 小批量梯度下降（MBGD, Mini Batch Gradient Descent）
   - 动量（Momentum）
+
+## 环境配置
+
+启动 jupyter lab 并开启 jupyter mcp server extension，允许部分 notebook mcp tool
+
+```bash
+jupyter lab --port 4040 --IdentityProvider.token MY_TOKEN --JupyterMCPServerExtensionApp.allowed_jupyter_mcp_tools="notebook_run-all-cells,notebook_get-selected-cell,notebook_append-execute"
+```

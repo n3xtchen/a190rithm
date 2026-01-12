@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "jupyter": {
+      "command": "uvx",
+      "args": ["jupyter-mcp-server@latest"],
+      "env": {
+        "JUPYTER_URL": "http://127.0.0.1:8887",
+        "JUPYTER_TOKEN": "MY_TOKEN",
+        "ALLOW_IMG_OUTPUT": "true"
+      }
+    }
+  }
+}

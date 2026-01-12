@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A library for machine learning and data science"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -27,7 +27,7 @@ dependencies = [
     "tabulate>=0.9.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 test = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -37,6 +37,14 @@ dev = [
     "isort>=5.10.1",
     "mypy>=0.910",
     "flake8>=4.0.1",
+]
+llm = [
+    "jupyter-mcp-server>=0.15.0",
+    "jupyter-mcp-tools>=0.1.4",
+    "jupyterlab==4.4.1",
+    "jupyter-collaboration==4.0.2",
+    "ipykernel",
+    "datalayer_pycrdt==0.12.17"
 ]
 
 [project.scripts]
