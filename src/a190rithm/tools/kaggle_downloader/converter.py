@@ -7,21 +7,106 @@
 import os
 from pathlib import Path
 import time
+from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple, Union
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from tqdm import tqdm
 
 from .config import Config
-from .models import DataFile, FileFormat, ParquetFile, ConversionStatus
+from .models import DataFile, FileFormat, ParquetFile, ConversionStatus, DownloadStatus
 from .exceptions import ConversionError, UnsupportedFormatError
 from .utils.logging_utils import LoggerAdapter
 
 
 # 创建日志记录器
 logger = LoggerAdapter("data_converter")
+
+
+def _convert_worker(file_data_dict, output_dir, compression, chunk_size, row_group_size, preserve_index, partition_cols):
+    """
+    工作进程的转换函数。
+    """
+    import os
+    from datetime import datetime
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    from .models import DataFile, FileFormat, DownloadStatus, ConversionStatus, ParquetFile
+
+    try:
+        # 重新创建 DataFile 对象
+        data_file = DataFile(
+            filename=file_data_dict['filename'],
+            format=FileFormat(file_data_dict['format']),
+            size=file_data_dict['size'],
+            path=file_data_dict['path'],
+            columns=file_data_dict.get('columns'),
+            schema=file_data_dict.get('schema'),
+            download_status=DownloadStatus(file_data_dict['download_status']),
+            download_progress=file_data_dict['download_progress'],
+            checksum=file_data_dict.get('checksum')
+        )
+
+        # 创建转换器实例（每个进程一个）
+        converter = DataConverter(
+            compression=compression,
+            chunk_size=chunk_size,
+            row_group_size=row_group_size,
+            preserve_index=preserve_index,
+            partition_cols=partition_cols,
+            processes=1  # 在工作进程中只使用单线程
+        )
+
+        # 转换文件
+        result = converter.convert_file(data_file, output_dir)
+        
+        if result is None:
+            return {
+                'success': False,
+                'filename': file_data_dict['filename'],
+                'error': '转换结果为 None'
+            }
+
+        # 由于不能直接返回 ParquetFile 对象（多进程 pickle 限制），
+        # 我们返回一个字典，稍后会用它重建 ParquetFile 对象
+        return {
+            'success': True,
+            'original_file': {
+                'filename': data_file.filename,
+                'format': data_file.format.value,
+                'size': data_file.size,
+                'path': data_file.path,
+                'columns': data_file.columns,
+                'schema': data_file.schema,
+                'download_status': data_file.download_status.value,
+                'download_progress': data_file.download_progress,
+                'checksum': data_file.checksum
+            },
+            'filename': result.filename,
+            'path': result.path,
+            'size': result.size,
+            'schema': result.schema,
+            'rows': result.rows,
+            'compression_ratio': result.compression_ratio,
+            'partition_cols': result.partition_cols,
+            'conversion_status': result.conversion_status.value,
+            'timestamp': result.timestamp.isoformat(),
+            'metadata': getattr(result, 'metadata', {})
+        }
+    except Exception as e:
+        # 在多进程环境中，logger 可能会有问题，所以我们也捕获并打印
+        print(f"工作进程转换文件失败: {file_data_dict['filename']} - {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
+            'filename': file_data_dict['filename'],
+            'error': str(e)
+        }
 
 
 class DataConverter:
@@ -182,8 +267,36 @@ class DataConverter:
 
     def _copy_parquet_file(self, data_file: DataFile, output_dir: str) -> ParquetFile:
         """复制 Parquet 文件"""
-        # 将在后续实现
-        pass
+        import shutil
+        import pyarrow.parquet as pq
+
+        # 构建输出文件路径
+        output_filename = os.path.basename(data_file.filename)
+        output_path = os.path.join(output_dir, output_filename)
+
+        # 确保输出目录存在
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        # 复制文件（如果源路径和目标路径不同）
+        if os.path.abspath(data_file.path) != os.path.abspath(output_path):
+            shutil.copy2(data_file.path, output_path)
+
+        # 读取 Parquet 元数据
+        parquet_file = pq.ParquetFile(output_path)
+        row_count = parquet_file.metadata.num_rows
+        schema_dict = {field.name: str(field.type) for field in parquet_file.schema.to_arrow_schema()}
+        parquet_size = os.path.getsize(output_path)
+
+        return ParquetFile(
+            original_file=data_file,
+            filename=output_filename,
+            path=output_path,
+            size=parquet_size,
+            schema=schema_dict,
+            rows=row_count,
+            compression_ratio=1.0,
+            conversion_status=ConversionStatus.COMPLETED
+        )
 
     def _convert_csv(self, data_file: DataFile, output_dir: str) -> ParquetFile:
         """
@@ -199,6 +312,8 @@ class DataConverter:
         抛出:
             ConversionError: 当转换过程中发生错误时
         """
+        import pyarrow as pa
+        import pyarrow.parquet as pq
         start_time = time.time()
         logger.info(f"转换 CSV 文件: {data_file.filename}")
 
@@ -233,42 +348,49 @@ class DataConverter:
                 columns = list(sample_df.columns)
                 dtypes = sample_df.dtypes.to_dict()
 
-                # 创建 Parquet 写入器
-                schema = None  # 自动推断
-
                 # 分块读取并写入
+                # 指定 dtype 以确保所有块的一致性，特别是对于可能包含混合类型的列
+                # 这里我们尝试使用 sample_df 的 dtypes，但对于 Object 类型，我们强制为 String
+                # 以避免 pyarrow 在不同块中推断出不同的子类型
+                forced_dtypes = {}
+                for col, dtype in dtypes.items():
+                    if dtype == 'object':
+                        forced_dtypes[col] = str
+                    else:
+                        forced_dtypes[col] = dtype
+
                 chunks = pd.read_csv(
                     data_file.path,
                     chunksize=self.chunk_size,
-                    low_memory=False
+                    low_memory=False,
+                    dtype=forced_dtypes
                 )
 
-                # 第一个块写入（包括元数据）
-                for i, chunk in enumerate(tqdm(chunks, desc="处理数据块")):
-                    if i == 0:
-                        # 第一个块，写入模式为 'w'
-                        chunk.to_parquet(
-                            output_path,
-                            engine='pyarrow',
-                            compression=self.compression,
-                            index=self.preserve_index,
-                            partition_cols=self.partition_cols,
-                            row_group_size=self.row_group_size
-                        )
-                    else:
-                        # 后续块，写入模式为 'a'
-                        chunk.to_parquet(
-                            output_path,
-                            engine='pyarrow',
-                            compression=self.compression,
-                            index=self.preserve_index,
-                            partition_cols=self.partition_cols,
-                            row_group_size=self.row_group_size,
-                            append=True
-                        )
-
-                # 计算行数
-                row_count = sum(1 for _ in pd.read_csv(data_file.path, chunksize=self.chunk_size))
+                writer = None
+                row_count = 0
+                
+                try:
+                    for chunk in tqdm(chunks, desc="处理数据块"):
+                        # 处理 NaN 值，以便更好地映射到 Parquet 类型
+                        # chunk = chunk.where(pd.notnull(chunk), None)
+                        
+                        # 转换为 pyarrow Table
+                        table = pa.Table.from_pandas(chunk, preserve_index=self.preserve_index)
+                        
+                        if writer is None:
+                            # 初始化 Parquet 写入器
+                            writer = pq.ParquetWriter(
+                                output_path,
+                                table.schema,
+                                compression=self.compression
+                            )
+                        
+                        # 写入数据块
+                        writer.write_table(table)
+                        row_count += len(chunk)
+                finally:
+                    if writer:
+                        writer.close()
             else:
                 # 直接读取小文件
                 logger.debug(f"文件较小 ({file_size / 1024 / 1024:.2f} MB)，直接读取")
@@ -1007,79 +1129,7 @@ class DataConverter:
 
         # 准备进程池
         start_time = time.time()
-        logger.debug(f"启动 {processes} 个转换进程")
-
-        # 定义工作函数
-        def convert_worker(file_data_dict):
-            """
-            工作进程的转换函数。
-
-            参数:
-                file_data_dict: 包含文件数据的字典
-
-            返回:
-                转换结果字典
-            """
-            try:
-                # 重新创建 DataFile 对象
-                data_file = DataFile(
-                    filename=file_data_dict['filename'],
-                    format=FileFormat(file_data_dict['format']),
-                    size=file_data_dict['size'],
-                    path=file_data_dict['path'],
-                    columns=file_data_dict.get('columns'),
-                    schema=file_data_dict.get('schema'),
-                    download_status=DownloadStatus(file_data_dict['download_status']),
-                    download_progress=file_data_dict['download_progress'],
-                    checksum=file_data_dict.get('checksum')
-                )
-
-                # 创建转换器实例（每个进程一个）
-                converter = DataConverter(
-                    compression=self.compression,
-                    chunk_size=self.chunk_size,
-                    row_group_size=self.row_group_size,
-                    preserve_index=self.preserve_index,
-                    partition_cols=self.partition_cols,
-                    processes=1  # 在工作进程中只使用单线程
-                )
-
-                # 转换文件
-                result = converter.convert_file(data_file, output_dir)
-
-                # 由于不能直接返回 ParquetFile 对象（多进程 pickle 限制），
-                # 我们返回一个字典，稍后会用它重建 ParquetFile 对象
-                return {
-                    'success': True,
-                    'original_file': {
-                        'filename': data_file.filename,
-                        'format': data_file.format.value,
-                        'size': data_file.size,
-                        'path': data_file.path,
-                        'columns': data_file.columns,
-                        'schema': data_file.schema,
-                        'download_status': data_file.download_status.value,
-                        'download_progress': data_file.download_progress,
-                        'checksum': data_file.checksum
-                    },
-                    'filename': result.filename,
-                    'path': result.path,
-                    'size': result.size,
-                    'schema': result.schema,
-                    'rows': result.rows,
-                    'compression_ratio': result.compression_ratio,
-                    'partition_cols': result.partition_cols,
-                    'conversion_status': result.conversion_status.value,
-                    'timestamp': result.timestamp.isoformat(),
-                    'metadata': getattr(result, 'metadata', {})
-                }
-            except Exception as e:
-                logger.error(f"工作进程转换文件失败: {file_data_dict['filename']} - {e}")
-                return {
-                    'success': False,
-                    'filename': file_data_dict['filename'],
-                    'error': str(e)
-                }
+        logger.debug(f"启动 {processes} 个转换 processes")
 
         # 准备转换任务
         tasks = []
@@ -1104,7 +1154,16 @@ class DataConverter:
             with ProcessPoolExecutor(max_workers=processes) as executor:
                 # 提交所有任务
                 future_to_file = {
-                    executor.submit(convert_worker, task): task['filename']
+                    executor.submit(
+                        _convert_worker,
+                        task,
+                        output_dir,
+                        self.compression,
+                        self.chunk_size,
+                        self.row_group_size,
+                        self.preserve_index,
+                        self.partition_cols
+                    ): task['filename']
                     for task in tasks
                 }
 

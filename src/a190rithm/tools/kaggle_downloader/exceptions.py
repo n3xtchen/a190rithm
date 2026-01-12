@@ -74,7 +74,10 @@ class InsufficientSpaceError(StorageError):
 # 转换相关错误
 class ConversionError(KaggleParquetError):
     """转换相关错误的基类"""
-    pass
+    def __init__(self, message, **kwargs):
+        super().__init__(message)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 class UnsupportedFormatError(ConversionError):

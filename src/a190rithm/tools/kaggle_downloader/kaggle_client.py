@@ -164,12 +164,12 @@ class KaggleClient:
             包含数据集信息的字典
         """
         return {
-            "ref": f"{kaggle_dataset.owner}/{kaggle_dataset.ref}",
+            "ref": kaggle_dataset.ref,
             "title": kaggle_dataset.title,
             "url": kaggle_dataset.url,
-            "size": kaggle_dataset.size,
-            "lastUpdated": kaggle_dataset.lastUpdated,
-            "downloadCount": kaggle_dataset.downloadCount,
+            "size": kaggle_dataset.total_bytes if hasattr(kaggle_dataset, 'total_bytes') else getattr(kaggle_dataset, 'size', 0),
+            "lastUpdated": kaggle_dataset.last_updated if hasattr(kaggle_dataset, 'last_updated') else getattr(kaggle_dataset, 'lastUpdated', None),
+            "downloadCount": kaggle_dataset.download_count if hasattr(kaggle_dataset, 'download_count') else getattr(kaggle_dataset, 'downloadCount', 0),
             "description": kaggle_dataset.description
         }
 
@@ -192,10 +192,10 @@ class KaggleClient:
             logger.info(f"获取数据集元数据: {dataset_id}")
             # 检查数据集是否存在
             owner, name = dataset_id.split("/")
-            datasets = self.api.dataset_list(owner=owner, search=name)
+            datasets = self.api.dataset_list(user=owner, search=name)
 
             # 找到匹配的数据集
-            matching_datasets = [ds for ds in datasets if f"{ds.owner}/{ds.ref}" == dataset_id]
+            matching_datasets = [ds for ds in datasets if ds.ref == dataset_id]
             if not matching_datasets:
                 raise DatasetNotFoundError(f"找不到数据集: {dataset_id}")
 
@@ -205,7 +205,7 @@ class KaggleClient:
 
             # 解析元数据
             metadata = self._parse_dataset_metadata(dataset)
-            metadata["files"] = [{"name": f.name, "size": f.size} for f in files]
+            metadata["files"] = [{"name": f.name, "size": f.total_bytes} for f in files]
             return metadata
         except DatasetNotFoundError:
             raise
@@ -439,7 +439,13 @@ class KaggleClient:
         # 保存到文件
         metadata_path = os.path.join(dataset_path, "metadata.json")
         with open(metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2, ensure_ascii=False)
+            # 使用自定义处理函数处理 datetime 对象
+            def datetime_handler(obj):
+                if hasattr(obj, 'isoformat'):
+                    return obj.isoformat()
+                raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+            json.dump(metadata, f, indent=2, ensure_ascii=False, default=datetime_handler)
 
         logger.debug(f"数据集元数据已保存到 {metadata_path}")
 

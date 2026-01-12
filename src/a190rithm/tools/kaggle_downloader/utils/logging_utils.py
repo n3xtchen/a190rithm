@@ -55,9 +55,7 @@ def setup_logging(
     # 使用 structlog 进行结构化日志
     if structured:
         processors = [
-            structlog.stdlib.filter_by_level,
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
+            structlog.processors.add_log_level,
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
         ]
@@ -75,19 +73,9 @@ def setup_logging(
         structlog.configure(
             processors=processors,
             context_class=dict,
-            logger_factory=structlog.stdlib.LoggerFactory(),
-            wrapper_class=structlog.stdlib.BoundLogger,
+            logger_factory=structlog.PrintLoggerFactory(),
             cache_logger_on_first_use=True,
         )
-
-        # 为标准库日志配置处理器和格式化器
-        formatter = structlog.stdlib.ProcessorFormatter(
-            processor=structlog.dev.ConsoleRenderer() if sys.stderr.isatty() else structlog.processors.JSONRenderer(),
-            foreign_pre_chain=processors,
-        )
-
-        for handler in handlers:
-            handler.setFormatter(formatter)
     else:
         # 使用传统的日志格式
         format_str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s" if include_timestamps else "[%(levelname)s] %(name)s: %(message)s"

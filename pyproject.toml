@@ -68,10 +68,10 @@ norecursedirs = [
 init-hook = "import sys; sys.path.append('src')" # 兼容 scr-layout
 
 [tool.pyright]
-include = ["a190rithm", "tests", "stubs"]
+include = ["src", "tests", "stubs"]
 exclude = [
   "**/__pycache__",
-  "a190rithm/torch",
+  "src/torch",
   "tests/torch"
 ]
 
