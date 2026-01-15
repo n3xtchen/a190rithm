@@ -4,6 +4,7 @@
 
 | 日期 | 版本 | 变更内容 | 备注 |
 | :--- | :--- | :--- | :--- |
+| 2026-01-15 | v1.4 | 引入环境自动化脚本 | 新增 scripts/ 目录下的初始化与启动脚本说明。 |
 | 2026-01-14 | v1.3 | 统一路径与启动目录规范 | 明确 Kernel 必须在项目根目录启动，并与静态项目结构规范对齐。 |
 | 2026-01-14 | v1.2 | 重构项目目录展示 | 使用目录树展示项目结构，强化 Python 通用规范。 |
 | 2026-01-14 | v1.1 | 文档架构重构 | 将项目管理提升为通用规范，Notebook 降级为子规范。 |
@@ -39,13 +40,18 @@ a190rithm/
 ### 1.2 环境与依赖管理 (Environment)
 
 *   **工具**: 本项目统一使用 **`uv`** 进行环境管理。
+*   **自动化脚本** (New v1.4):
+    *   **初始化**: 使用 `./scripts/init.sh` 进行一键环境配置（包含 uv 安装、.env 生成及依赖同步）。
+    *   **检查**: 使用 `./scripts/check_env.sh` 验证环境可用性。
 *   **依赖安装**:
-    *   必须使用外部 Shell 工具执行安装：`uv pip install <package>`。
+    *   必须使用外部 Shell 工具执行安装：`uv pip install <package>` 或 `uv add <package>`。
 *   **❌ 禁止事项**: 严禁在任何脚本或 Notebook 单元格中通过 Magic Command (`%pip`) 安装依赖。
 
 ## 2. Jupyter Notebook 操作子规范 (Notebook Sub-Standards)
 
 ### 2.1 启动目录规范 (Working Directory Policy)
+*   **启动方式** (New v1.4):
+    *   推荐使用 **`./scripts/start_jupyter.sh`** 启动服务。该脚本会自动加载 `.env` 配置，检查端口占用，并确保 Kernel 在根目录启动。
 *   **强制规定**: 所有 Notebook Kernel 必须在 **项目根目录 (`a190rithm/`)** 启动。
 *   **目的**: 确保运行时环境与项目目录树规范完全匹配，无需使用相对路径处理数据读取。
 *   **验证动作**: 在 Notebook 初始化单元格中进行断言校验。
