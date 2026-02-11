@@ -26,6 +26,10 @@ dependencies = [
     "keyring>=23.9.0",
     "tabulate>=0.9.0",
     "python-multipart>=0.0.22",
+    "protobuf>=6.33.5",
+    "nbconvert>=7.17.0",
+    "cryptography>=46.0.5",
+    "urllib3>=2.6.3",
 ]
 
 [dependency-groups]
@@ -42,7 +46,7 @@ dev = [
 llm = [
     "jupyter-mcp-server>=0.15.0",
     "jupyter-mcp-tools>=0.1.4",
-    "jupyterlab==4.4.1",
+    "jupyterlab>=4.4.8",
     "jupyter-collaboration==4.0.2",
     "ipykernel",
     "datalayer_pycrdt==0.12.17"
