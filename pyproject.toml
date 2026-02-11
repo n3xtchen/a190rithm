@@ -42,7 +42,7 @@ dev = [
 llm = [
     "jupyter-mcp-server>=0.15.0",
     "jupyter-mcp-tools>=0.1.4",
-    "jupyterlab==4.4.1",
+    "jupyterlab==4.4.8",
     "jupyter-collaboration==4.0.2",
     "ipykernel",
     "datalayer_pycrdt==0.12.17"
