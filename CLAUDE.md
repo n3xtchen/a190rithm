@@ -28,10 +28,10 @@ stubs/                  # 类型存根文件
 
 ## 主要开发命令
 
-- **环境管理**: 使用 `uv` 或标准 pip/virtualenv 管理依赖。
+- **环境管理**: 使用 `uv` 管理依赖。
   - 安装依赖: `uv sync` 或 `pip install -e .`
 - **运行测试**:
-  - 运行所有测试: `pytest`
+  - 运行所有测试: `uv run pytest`
 
 ## 高层架构要点
 

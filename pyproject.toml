@@ -30,6 +30,7 @@ dependencies = [
     "nbconvert>=7.17.0",
     "cryptography>=46.0.5",
     "urllib3>=2.6.3",
+    "tensorflow>=2.21.0",
 ]
 
 [dependency-groups]

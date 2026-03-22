@@ -46,3 +46,6 @@ cover/
 
 data/
 stubs/
+
+.layers
+.models
