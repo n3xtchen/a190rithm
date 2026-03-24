@@ -6,7 +6,7 @@ from datasets.builder import Dataset
 from datasets.load import load_dataset
 from torch.utils.data import DataLoader
 
-from a190rithm.torch.models.text_classification_roberta import (
+from a190rithm.torch.models.roberta import (
     RobertaTextClassification, RobertaTokenizerWithMaxLength)
 from a190rithm.torch.utils import format_time
 

@@ -8,7 +8,7 @@ import tensorflow as tf
 import pytest
 import numpy as np
 import random
-from a190rithm.tensorflow.models.SpatioTemporalNet import TemporalAttentionBlock
+from a190rithm.tensorflow.blocks.temporal import TemporalAttentionBlock
 
 def set_seed(seed=42):
     random.seed(seed)

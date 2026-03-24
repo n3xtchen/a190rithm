@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import pytest
-from a190rithm.tensorflow.models.SpatioTemporalNet import TemporalBlock
+from a190rithm.tensorflow.blocks.temporal import TemporalBlock
 
 def test_temporal_block_init():
     # This should fail with the current implementation

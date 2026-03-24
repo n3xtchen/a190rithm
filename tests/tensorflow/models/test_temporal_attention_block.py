@@ -1,7 +1,9 @@
 import tensorflow as tf
+tf.random.set_seed(42)
+import tensorflow as tf
 import pytest
 import numpy as np
-from a190rithm.tensorflow.models.SpatioTemporalNet import TemporalAttentionBlock
+from a190rithm.tensorflow.blocks.temporal import TemporalAttentionBlock
 
 def test_temporal_attention_block_init():
     # This should fail if there's any immediate error in __init__
