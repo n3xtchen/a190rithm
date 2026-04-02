@@ -55,6 +55,7 @@ llm = [
 
 [project.scripts]
 kaggle-parquet = "a190rithm.tools.kaggle_downloader.cli:main"
+tfrecord-viewer = "a190rithm.tools.tfrecord_viewer.cli:main"
 
 [tool.yapf]
 based_on_style = "pep8"
